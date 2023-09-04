@@ -1,0 +1,54 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #00ff6a;
+}
+
+.title {
+  font-size: 24px;
+  margin-top: -0.25rem; /* Add space between the emoji and the title */
+}
+
+.wizard-icon {
+  font-size: 2.5rem;
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 300px; /* Define um limite máximo de largura */
+  margin: 0 auto;
+  margin-bottom: 1rem;
+  padding: 5px;
+  font-size: 16px;
+  border-width: 5px;
+  border-color: #000fff;
+  background-color: #ffffff;
+  color: #6c5252;
+  border-style: inset;
+  border-radius: 15px;
+  box-shadow: 5px 8px 6px rgba(66,66,66,.35);
+  text-shadow: 1px 0px 9px rgba(0,54,255,.66);
+}
+
+input {
+  padding: 0.5rem;
+  font-size: 16px;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+}
