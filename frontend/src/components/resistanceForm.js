@@ -101,6 +101,7 @@ function ResistanceForm() {
           onResistanceChange={(value) => handleInputChange(index - 1, value, 'resistance')}
           onMarginChange={(value) => handleInputChange(index - 1, value, 'margin')}
         />
+        
       ))}
       <button onClick={handleSubmit}>Submit</button>
     </div>

@@ -18,6 +18,7 @@
 
 .input-container {
   display: flex;
+  z-index: 1;
   flex-direction: column;
   align-items: center;
   max-width: 300px; /* Define um limite máximo de largura */
@@ -51,4 +52,14 @@ button {
   flex-direction: column;
   align-items: center;
   margin: 0 auto;
+}
+
+.resistor-component {
+  position: absolute;
+  top: 50%; /* Ajuste conforme necessário para posicionar verticalmente */
+  left:50%; /* Ajuste conforme necessário para posicionar horizontalmente */
+  transform: translate(-50%, -50%); /* Centraliza o elemento no meio do elemento pai */
+  z-index: 9999; /* Garante que o elemento esteja na frente dos elementos do input-container */
+  min-width: 20px; /* Defina um tamanho mínimo para a largura */
+  min-height: 20px;
 }
