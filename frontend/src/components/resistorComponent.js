@@ -34,14 +34,17 @@ function getColorCodes(resistance) {
 
 export default function ResistorComponent({ resistance }) {
   const colors = getColorCodes(resistance);
-  console.debug(colors);
+
+  const color1Class = `resistor-band ${colors[0]}`;
+  const color2Class = `resistor-band ${colors[1]}`;
+  const colorMultiplierClass = `resistor-band ${colors[2]}`;
+
   return (
-    <div className="resistor-component">
-      <div className="resistor-band" style={{ backgroundColor: colors[0] }}></div>
-      <div className="resistor-band" style={{ backgroundColor: colors[1] }}></div>
-      <div className="resistor-band" style={{ backgroundColor: colors[2] }}></div>
-      <div className="resistor-band" style={{ backgroundColor: colors[3] }}></div>
-    </div>
+      <div className="resistor-bands-container">
+        <div className={color1Class} style={{ backgroundColor: colors[0] }}></div>
+        <div className={color2Class} style={{ backgroundColor: colors[1] }}></div>
+        <div className={colorMultiplierClass} style={{ backgroundColor: colors[2] }}></div>
+        <img src="/resistor-without-background.png" alt="Resistor" className="resistor-image" />      
+      </div>
   );
 }
-

@@ -55,11 +55,31 @@ button {
 }
 
 .resistor-component {
+  position: relative; /* Mude para "relative" para que os elementos internos respeitem o posicionamento */
+  display: flex;
+  flex-direction: column; /* Para empilhar elementos verticalmente */
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #00ff6a;
+}
+
+.resistor-bands-container {
   position: absolute;
-  top: 50%; /* Ajuste conforme necessário para posicionar verticalmente */
-  left:50%; /* Ajuste conforme necessário para posicionar horizontalmente */
-  transform: translate(-50%, -50%); /* Centraliza o elemento no meio do elemento pai */
-  z-index: 9999; /* Garante que o elemento esteja na frente dos elementos do input-container */
-  min-width: 20px; /* Defina um tamanho mínimo para a largura */
-  min-height: 20px;
+  display: flex;
+  justify-content: center; /* Centraliza as faixas horizontalmente */
+  margin-top: 20px; /* Espaço entre os inputs e as faixas */
+}
+
+.resistor-band {
+  flex: 1; /* Distribui igualmente as faixas horizontalmente */
+  max-height: 100px;
+  max-width: 20px;
+  margin: 5px; /* Espaço entre as faixas */
+}
+
+.resistor-image {
+  max-width: 200px;
+  max-height: 160px;
+  margin-top: 20px; /* Espaço entre as faixas e a imagem */
 }
