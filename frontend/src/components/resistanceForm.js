@@ -1,62 +1,89 @@
 import React, { useState } from 'react';
+import ResistorComponent from './resistorComponent';
 import { toast } from 'react-toastify';
-import ResistanceInput from './resistanceInput';
 
 function ResistanceForm() {
-  const [resistances, setResistances] = useState([]);
-  const [margins, setMargins] = useState([]);
+  const [resistances, setResistances] = useState(Array(5).fill(''));
+  const [margins, setMargins] = useState(Array(5).fill(''));
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  function findNearestResistance(inputValue) {
+  const findNearestResistance = (inputValue) => {
     const inputValueString = inputValue.toString().split('.')[0];
-
     const firstTwoDigitsAsString = inputValueString.substring(0, 2);
     const firstTwoDigits = parseInt(firstTwoDigitsAsString);
-
     const digitsToTheRight = inputValueString.substring(2).length;
-
     const result = firstTwoDigits * Math.pow(10, digitsToTheRight);
-
     return result;
   }
 
   const handleInputChange = (index, value, type) => {
+    if (value.trim() === '') {
+      if (type === 'resistance') {
+        setResistances(prevResistances => {
+          const updatedResistances = [...prevResistances];
+          updatedResistances[index] = '';
+          return updatedResistances;
+        });
+      } else if (type === 'margin') {
+        setMargins(prevMargins => {
+          const updatedMargins = [...prevMargins];
+          updatedMargins[index] = '';
+          return updatedMargins;
+        });
+      }
+      return;
+    }
+  
     const numericValue = parseFloat(value);
-
+  
     if (!isNaN(numericValue)) {
       if (type === 'resistance') {
         const nearestResistance = findNearestResistance(numericValue);
-        setResistances((prevResistances) => {
+        setResistances(prevResistances => {
           const updatedResistances = [...prevResistances];
           updatedResistances[index] = nearestResistance;
           return updatedResistances;
         });
       } else if (type === 'margin') {
-        setMargins((prevMargins) => {
+        setMargins(prevMargins => {
           const updatedMargins = [...prevMargins];
           updatedMargins[index] = numericValue;
           return updatedMargins;
         });
       }
     } else {
-      toast.error('Por favor, insira um valor numérico.', {
-        position: toast.POSITION.TOP_CENTER,
-        autoClose: 3000,
-      });
+      handleInvalidInput();
     }
   };
+  const handleNextInput = () => {
+    if (currentIndex < 4) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      handleFormSubmission();    }
+  };
+  const handlePreviousInput = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+  const handleInvalidInput = () => {
+    toast.error('Por favor, insira um valor numérico.', {
+      position: toast.POSITION.TOP_CENTER,
+      autoClose: 3000,
+    });
+  };
 
-  const handleSubmit = async () => {
-    // Verifique se há 6 resistências e 6 margens definidas
-    if (resistances.length !== 6 || margins.length !== 6) {
-      toast.error('Por favor, defina 6 resistências e 6 margens antes de enviar os dados.', {
+  const handleFormSubmission = async () => {
+    if (resistances.length !== 5 || margins.length !== 5) {
+      toast.error('Por favor, defina 5 resistências e 5 margens antes de enviar os dados.', {
         position: toast.POSITION.TOP_CENTER,
         autoClose: 5000,
       });
-      return; // Não continue se os dados não estiverem completos
+      return;
     }
 
     const dataToSend = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 5; i++) {
       dataToSend.push({
         resistance: resistances[i],
         margin: margins[i],
@@ -94,15 +121,30 @@ function ResistanceForm() {
 
   return (
     <div>
-      {[1, 2, 3, 4, 5, 6].map((index) => (
-        <ResistanceInput
-          key={index}
-          index={index}
-          onResistanceChange={(value) => handleInputChange(index - 1, value, 'resistance')}
-          onMarginChange={(value) => handleInputChange(index - 1, value, 'margin')}
-        />
-      ))}
-      <button onClick={handleSubmit}>Submit</button>
+      <label htmlFor={`resistance${currentIndex}`}>Resistance {currentIndex + 1}</label>
+      <input
+        type="text"
+        name={`resistance${currentIndex}`}
+        value={resistances[currentIndex] || ''}
+        onChange={e => handleInputChange(currentIndex, e.target.value, 'resistance')}
+      />
+  
+      <label htmlFor={`margin${currentIndex}`}>Margin {currentIndex + 1}</label>
+      <input
+        type="text"
+        name={`margin${currentIndex}`}
+        value={margins[currentIndex] || ''}
+        onChange={e => handleInputChange(currentIndex, e.target.value, 'margin')}
+      />
+    <div className="buttons">
+      {currentIndex > 0 && (
+        <button onClick={handlePreviousInput}>Previous</button>
+      )}
+      {currentIndex < 4 && (
+        <button onClick={handleNextInput}>Next</button>
+      )}
+    </div>
+      <ResistorComponent resistance={parseFloat(resistances[currentIndex])} />
     </div>
   );
 }
