@@ -4,16 +4,37 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #00ff6a;
+  position: relative; 
+  overflow: hidden;/* Adicionamos uma posição relativa */
 }
 
-.title {
-  font-size: 24px;
-  margin-top: -0.25rem; /* Add space between the emoji and the title */
+.App::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+	background: linear-gradient(45deg, #f0f0f0, #005eff, #0044ff, #0000ff);
+  background-size: 400% 400%;
+  animation: gradient 5s alternate infinite;
+  z-index: -1; /* Coloca a camada abaixo do conteúdo */
 }
 
-.wizard-icon {
-  font-size: 2.5rem;
+.logo{
+  max-width:100%;
+}
+
+@keyframes gradient {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
 }
 
 .input-container {
@@ -21,16 +42,10 @@
   z-index: 1;
   flex-direction: column;
   align-items: center;
-  max-width: 300px; /* Define um limite máximo de largura */
+  max-width: 300px;
   margin: 0 auto;
-  margin-bottom: 1rem;
-  padding: 5px;
-  font-size: 16px;
-  border-width: 5px;
-  border-color: #000fff;
-  background-color: #ffffff;
-  color: #6c5252;
   border-style: inset;
+  min-width:500px;
   border-radius: 15px;
   box-shadow: 5px 8px 6px rgba(66,66,66,.35);
   text-shadow: 1px 0px 9px rgba(0,54,255,.66);
@@ -39,47 +54,110 @@
 input {
   padding: 0.5rem;
   font-size: 16px;
+  display: flex;
+  margin-bottom: 1rem;
+  font-size: 16px;
+  border-width: 5px;
+  border-color: #000fff;
+  background-color: #ffffff;
+}
+
+body {
+  margin: 0;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: row;
 }
 
 button {
   padding: 0.5rem 1rem;
   font-size: 16px;
-  background-color: #007bff;
-  color: white;
+  background-color: #ffee00;
+  color: rgb(0, 0, 0);
   border: none;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   margin: 0 auto;
+  margin-top:5px;
 }
 
-.resistor-component {
-  position: relative; /* Mude para "relative" para que os elementos internos respeitem o posicionamento */
+.resistor-container {
+  position: relative;
+  top: 0;
+  left: 0;
   display: flex;
-  flex-direction: column; /* Para empilhar elementos verticalmente */
-  align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background-color: #00ff6a;
+  width: 100%;
 }
 
 .resistor-bands-container {
-  position: absolute;
+  border: 5px solid black;
+  margin: 1px;
+  margin-top:10%;
+  position: relative;
+  top: 0;
+  left: 0;
   display: flex;
-  justify-content: center; /* Centraliza as faixas horizontalmente */
-  margin-top: 20px; /* Espaço entre os inputs e as faixas */
+  justify-content: space-between;
+  width: 100%;
+  background-color: rgba(115, 110, 110, 0.486);
 }
 
-.resistor-band {
-  flex: 1; /* Distribui igualmente as faixas horizontalmente */
-  max-height: 100px;
-  max-width: 20px;
-  margin: 5px; /* Espaço entre as faixas */
+.resistor-bands-container::before,
+.resistor-bands-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: black;
 }
 
-.resistor-image {
-  max-width: 200px;
-  max-height: 160px;
-  margin-top: 20px; /* Espaço entre as faixas e a imagem */
+.resistor-bands-container::before {
+  left: -30px;
+  rotate:calc(90deg)
+}
+
+.resistor-bands-container::after {
+  right: -30px;
+  rotate:calc(90deg)
+}
+
+.first-resistor-band {
+  margin-left: 15px;
+  z-index: 9999;
+  height: 50px;
+  width: 10px;
+  right: 5px;
+}
+  
+.second-resistor-band {
+  z-index: 9999;
+  height: 50px;
+  width: 10px;
+}
+  
+.third-resistor-band {
+  z-index: 9999;
+  height: 50px;
+  width: 10px;
+  margin-right: 50px;
+}
+
+.tolerance-resistor-band {
+  z-index: 9999;
+  height: 50px;
+  width: 10px;
+  margin-right: 20px;
+}
+
+.unique-resistor-band{
+  z-index: 9999;
+  height: 50px;
+  width: 10px;
+  margin-left:195px;
 }

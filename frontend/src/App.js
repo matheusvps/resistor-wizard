@@ -3,10 +3,9 @@ import './App.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ResistanceForm from './components/resistanceForm';
-import ResistorComponent from './components/resistorComponent';
 
 function App() {
-  const [resistance, setResistance] = useState(0);
+  const [setResistance] = useState(0);
 
   const handleResistanceChange = (newResistance) => {
     setResistance(newResistance);
@@ -14,10 +13,10 @@ function App() {
 
   return (
     <div className="App">
-      <div className="wizard-icon">🧙‍♂️</div>
-      <h1 className="title">Resistor Wizard ⚡</h1>
+      <h1 className="title">
+        <img src="/logo.png" alt="Logo" className='logo'/>      
+        </h1>
       <ResistanceForm onResistanceChange={handleResistanceChange} />
-      <ResistorComponent className="resistor-component" resistance={resistance} />
       <ToastContainer />
     </div>
   );

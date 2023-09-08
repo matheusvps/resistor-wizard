@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ResistorComponent from './resistorComponent';
+import Tooltip from '@mui/material/Tooltip';
 
 function ResistanceInput({ index, onResistanceChange, onMarginChange }) {
   const [resistanceValue, setResistanceValue] = useState('');
@@ -12,12 +13,14 @@ function ResistanceInput({ index, onResistanceChange, onMarginChange }) {
   return (
     <div className="input-container">
       <label htmlFor={`resistance${index}`}>Resistance {index}</label>
-      <input
-        type="text"
-        name={`resistance${index}`}
-        value={resistanceValue}
-        onChange={(event) => handleResistanceChange(event.target.value)}
-      />
+      <Tooltip>
+        <input
+          type="text"
+          name={`resistance${index}`}
+          value={resistanceValue}
+          onChange={(event) => handleResistanceChange(event.target.value)}
+        />
+      </Tooltip>
 
       <ResistorComponent resistance={parseFloat(resistanceValue)} />
       <label htmlFor={`margin${index}`}>Margin {index}</label>
