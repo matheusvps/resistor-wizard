@@ -33,12 +33,10 @@ function ResistanceForm() {
       }
       return;
     }
-  
-    const numericValue = parseFloat(value);
-  
-    if (!isNaN(numericValue)) {
+    
+    if (!isNaN(value)) {
       if (type === 'resistance') {
-        const nearestResistance = findNearestResistance(numericValue);
+        const nearestResistance = findNearestResistance(value);
         setResistances(prevResistances => {
           const updatedResistances = [...prevResistances];
           updatedResistances[index] = nearestResistance;
@@ -47,7 +45,7 @@ function ResistanceForm() {
       } else if (type === 'margin') {
         setMargins(prevMargins => {
           const updatedMargins = [...prevMargins];
-          updatedMargins[index] = numericValue;
+          updatedMargins[index] = value;
           return updatedMargins;
         });
       }
@@ -123,7 +121,8 @@ function ResistanceForm() {
     <div>
       <label htmlFor={`resistance${currentIndex}`}>Resistance {currentIndex + 1}</label>
       <input
-        type="text"
+        type="number"
+        step="any"
         name={`resistance${currentIndex}`}
         value={resistances[currentIndex] || ''}
         onChange={e => handleInputChange(currentIndex, e.target.value, 'resistance')}
@@ -131,7 +130,8 @@ function ResistanceForm() {
   
       <label htmlFor={`margin${currentIndex}`}>Margin {currentIndex + 1}</label>
       <input
-        type="text"
+        type="number"
+        step="any"
         name={`margin${currentIndex}`}
         value={margins[currentIndex] || ''}
         onChange={e => handleInputChange(currentIndex, e.target.value, 'margin')}
