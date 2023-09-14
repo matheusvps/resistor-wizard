@@ -72,8 +72,8 @@ function ResistanceForm() {
   };
 
   const handleFormSubmission = async () => {
-    if (resistances.length !== 5 || margins.length !== 5) {
-      toast.error('Por favor, defina 5 resistências e 5 margens antes de enviar os dados.', {
+    if (resistances.every(resistance => resistance === '') || margins.every(margin => margin === '')) {
+      toast.error('Por favor, insira pelo menos uma resistência e uma margem antes de enviar os dados.', {
         position: toast.POSITION.TOP_CENTER,
         autoClose: 5000,
       });
@@ -136,14 +136,14 @@ function ResistanceForm() {
         value={margins[currentIndex] || ''}
         onChange={e => handleInputChange(currentIndex, e.target.value, 'margin')}
       />
-    <div className="buttons">
-      {currentIndex > 0 && (
-        <button onClick={handlePreviousInput}>Previous</button>
-      )}
-      {currentIndex < 4 && (
-        <button onClick={handleNextInput}>Next</button>
-      )}
-    </div>
+  
+      <div className="buttons">
+        {currentIndex > 0 && (
+          <button onClick={handlePreviousInput} className="button">Previous</button>
+        )}
+        <button onClick={handleNextInput} className="button">Next</button>
+        <button onClick={handleFormSubmission}>Submit</button>
+      </div>
       <ResistorComponent resistance={parseFloat(resistances[currentIndex])} />
     </div>
   );

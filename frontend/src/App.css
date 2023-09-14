@@ -83,6 +83,7 @@ button {
   align-items: center;
   margin: 0 auto;
   margin-top:5px;
+  margin-right: 10px;
 }
 
 .resistor-container {
