@@ -160,8 +160,7 @@ cython_debug/
 #.idea/
 
 # Backend files to be untracked - training versions, dataset files, inference tests, etc.
-Metal Film Leaded Resistors Dataset/
-Metal-Film-Leaded-Resistor-Color-Bands-4/
+Metal*/
 Videos_Resistores/
 Fotos_Resistores/
 Tests/
@@ -172,3 +171,4 @@ Tests/
 runs/
 HSV.ipynb
 Oficinas_1_YOLOv8.ipynb
+.ipynb_checkpoints/
