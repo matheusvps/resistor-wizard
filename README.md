@@ -24,9 +24,9 @@ The backend of the project runs on a Raspberry Pi 3B server and is implemented i
 - Color recognition using OpenCV
 - Communication with the frontend
 
-### AI Model
+### Machine-Learning Model
 
-The AI model is a critical component of this project. It has been trained by our dedicated team to recognize resistor colors accurately. This model plays a crucial role in determining the resistance values of the sorted resistors.
+The ML model is a critical component of this project. It has been trained by our dedicated team to recognize resistors and resistor color bands accurately. The data used to train the model is mostly self-provided (meaning we created and labelled the data ourselves). The complete datasets can be visited at <a href="https://universe.roboflow.com/uni-vug0c/metal-film-leaded-resistors-dataset">resistor dataset</a> and <a href="https://universe.roboflow.com/jhony-minetto-arajo/metal-film-leaded-resistor-color-bands">resistor color bands dataset</a>.
 
 ## Getting Started
 
