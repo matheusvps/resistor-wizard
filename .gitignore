@@ -161,9 +161,10 @@ cython_debug/
 
 # Backend files to be untracked - training versions, dataset files, inference tests, etc.
 Metal*/
-Videos_Resistores/
-Fotos_Resistores/
+Videos*/
+Fotos*/
 Tests/
+tmp/
 *.swp
 *.un~
 .gitignore~
@@ -172,3 +173,4 @@ runs/
 HSV.ipynb
 Oficinas_1_YOLOv8.ipynb
 .ipynb_checkpoints/
+Untitled.ipynb
