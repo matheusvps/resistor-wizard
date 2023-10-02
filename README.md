@@ -2,13 +2,13 @@
 
 ## Overview
 
-This GitHub repository hosts the code for the Resistor Sorter project, developed as part of the Integration Workshops 1 course. The project's primary objective is to create a resistor sorting system that allows users to input resistors and select six resistance values. The system is implemented as a web application, with a frontend built using CSS, HTML, JavaScript, and React. Backend processing is handled on a Raspberry Pi 3B server running Flask, and it involves resistor position localization and color recognition using OpenCV. An AI model, trained by the project team, assists in this process.
+This GitHub repository hosts the code for the Resistor Sorter project, developed as part of the Integration Workshops 1 course. The system consists of a resistor sorting system that allows users to insert indivual resistors into a small slit and select up to six resistance values to sort them into. The system is implemented as a web application, with its frontend built using CSS, HTML, JavaScript, and React. Both the server and subsequent backend processes are handled by a Raspberry Pi 3B running Flask. Using computer vision techniques, it photographs the resistor's position and extracts color information about the resistor to determine its resistance. Machine Learning (ML) techniques were used to assist in this process.
 
 ## Team Members
 
 - **Matheus Passos** - Frontend Development and Project Integration
-- **Jhony Minetto** - Backend Development and Algorithm Design
-- **Ricardo Marthus** - Model Design and Training
+- **Jhony Minetto** - Backend Development, Algorithm Design and ML Training
+- **Ricardo Marthus** - Conception of 3D models and Image Labelling for the dataset
 
 ## Project Components
 
@@ -20,13 +20,13 @@ The frontend of the Resistor Sorter project is responsible for creating the user
 
 The backend of the project runs on a Raspberry Pi 3B server and is implemented in Python using the Flask framework. It handles the following tasks:
 
-- Resistor position localization
+- Determining Resistor's position and color bands location using ML (YOLOv8 network trained on PyTorch ML framework)
 - Color recognition using OpenCV
 - Communication with the frontend
 
 ### Machine-Learning Model
 
-The ML model is a critical component of this project. It has been trained by our dedicated team to recognize resistors and resistor color bands accurately. The data used to train the model is mostly self-provided (meaning we created and labelled the data ourselves). The complete datasets can be visited at <a href="https://universe.roboflow.com/uni-vug0c/metal-film-leaded-resistors-dataset">resistor dataset</a> and <a href="https://universe.roboflow.com/jhony-minetto-arajo/metal-film-leaded-resistor-color-bands">resistor color bands dataset</a>.
+The ML models are a crucial component of this project. They have been trained by our dedicated team to recognize resistors and resistor color bands accurately. The data used to train the models themselves is majoritarily self-provided (meaning we created and labelled the data ourselves). The complete datasets can be visited at <a href="https://universe.roboflow.com/uni-vug0c/metal-film-leaded-resistors-dataset">resistor dataset</a> and <a href="https://universe.roboflow.com/jhony-minetto-arajo/metal-film-leaded-resistor-color-bands">resistor color bands dataset</a>.
 
 ## Getting Started
 
