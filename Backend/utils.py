@@ -1,11 +1,11 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-import multiprocessing
 import numpy as np
 import cv2 as cv
 import os
 from time import time
 
 CROP_AMOUNT = 3
+SCALE_BBOX = 0.5
 tmp_dir = os.path.join(os.getcwd(),"tmp")
 tmp_crop = os.path.join(tmp_dir, "crop.png")
 tmp_mask = os.path.join(tmp_dir, "mask.png")
@@ -13,6 +13,13 @@ tmp_mask = os.path.join(tmp_dir, "mask.png")
 # Crops a numpy array image using a bounding box
 def cropImage(image, box):
     return image[int(box[1]):int(box[3]), int(box[0]):int(box[2])]
+
+
+# Calculates the centroid of a rectangle
+def get_centroid(rect):
+    cX = (rect[2] + rect[0])/2
+    cY = (rect[3] + rect[1])/2
+    return (cX, cY)
 
 
 # Checks if two colors are equal
@@ -33,75 +40,40 @@ def vec_sum(v1, v2):
         out[i] = v1[i] + v2[i]
     return out
 
-# Calculates the average of the pixels in an image
-def calc_avg(pixels, imgfmt=True):
-        if imgfmt:
-            pix = pixels.reshape((-1,1,3))
-            length = 0
-            summ = [0]*3
-            ref = [0]*len(pix[0][0])
-            for p in pix:
-                if not eqq(p, ref):
-                    length += 1
-                    summ = vec_sum(summ, p[0])
-            return np.array(summ)/length
-        else:
-            length = 0
-            summ = [0]*3
-            ref = [0]*len(pixels[0])
-            for p in pixels:
-                if not eqq(p, ref):
-                    length += 1
-                    summ = vec_sum(summ, p)
-            return np.array(summ)/length
-
-
-#
-def parallel_average(pixels):
-    num_processes = multiprocessing.cpu_count()  # Get the number of CPU cores
-    with multiprocessing.Pool(processes=num_processes) as pool:
-        averages = pool.map(calc_avg, pixels)
-    return calc_avg(averages, imgfmt=False)
-
 # Class mask for grouping objects
 class Mask:
     def __init__(self, img, bbox=[], contour=[]):
         self.image = img
-        self.orig_shape = img.shape
         self.mask = np.zeros_like(img, dtype=np.uint8)  # creates mask of same size as original image
         self.avgColor = (None, None, None)
         self.bbox = bbox
         self.contour = contour
         self.index = -1  # This color's position relative to others
         self.color = ""  # A string identifier of the color the mask represents
-        self.rotated = False
-    # Bitwise AND on the original image using the mask
-    def maskImage(self, crop=1):
-        pixels = np.zeros_like(self.image, dtype=np.uint8)
-        for x in range(len(self.image)):
-            for y in range(len(self.image[0])):
-                if eqq(self.mask[x][y], [255,255,255]):
-                    if x-crop >= 0 and x+crop < len(self.image) and y-crop >= 0 and y+crop < len(self.image[0]):
-                        if eqq(self.mask[x-crop][y], [255,255,255]) and eqq(self.mask[x+crop][y], [255,255,255]) and eqq(self.mask[x][y-crop], [255,255,255]) and eqq(self.mask[x][y+crop], [255,255,255]):
-                            pixels[x][y] = self.image[x][y]
-        return pixels
     # Calculates average color on the color band associated with the mask
     def sample_avg_color(self):
-        pixels = self.maskImage(crop=CROP_AMOUNT)
-        self.avgColor = parallel_average(pixels)
+        center = [int(j) for j in get_centroid([float(i) for i in self.bbox[:4]])]  # Center of Bounding box
+        xLength = self.bbox[2] - self.bbox[0]  # Length of edges on X and Y
+        yLength = self.bbox[3] - self.bbox[1]
+        sX = int(center[0] - ((SCALE_BBOX*xLength)/2))  # Top left corner of box to consider for averaging
+        sY = int(center[1] - ((SCALE_BBOX*yLength)/2))
+        eX = int(sX + (SCALE_BBOX*xLength))
+        eY = int(sY + (SCALE_BBOX*yLength))
+        summ = np.array([0,0,0])
+        nump = 0
+        for i in range(sX, eX+1):
+            for j in range(sY, eY+1):
+                if cv.pointPolygonTest(self.contour, (i, j), measureDist=False) == 1:
+                    summ += self.image[j][i]
+                    nump += 1
+        self.avgColor = summ/nump
+        
     # Checks if a point is inside the mask's bounding box
     def contains(self, point):
         if list(point) < self.bbox[0:2].tolist() or list(point) > self.bbox[2:4].tolist():
             return False
         else:
             return True
-
-
-# Calculates the centroid of a rectangle
-def get_centroid(rect):
-    cX = (rect[2] + rect[0])/2
-    cY = (rect[3] + rect[1])/2
-    return (cX, cY)
 
 
 # Calculates the linear regression of the points in a 2D dataset: Y in function of X (Y= a*X + b)
@@ -154,9 +126,8 @@ def get_segmentation_masks(img, inference, data=255):
     masks = [Mask(image) for i in range(len(inference[0].masks.xy))]
     for i in range(len(inference[0].masks.xy)):
         polygon = inference[0].masks.xy[i].astype(int)
+        masks[i].contour = polygon
         masks[i].bbox = inference[0].boxes.cpu().data[i]
-        masks[i].contour = polygon.reshape((-1, 1, 2))  # Reshape to match the format expected by cv.drawContours
-        masks[i].mask = cv.fillPoly(masks[i].mask, [masks[i].contour], tuple([data]*3)) # converts polygon points to pixels inside it
         masks[i].sample_avg_color()
     return masks
 
@@ -190,7 +161,11 @@ def order_masks(masks, inference):
 
     #if len(sorted_masks) != len(masks):
     #  ~ TERMINAR CODIGO DE ROTAÇÃO DAS IMAGENS CASO ESTEJA VERTICAL... ~
-    return list(sorted_masks)
+
+    ordered = list(sorted_masks)
+    for m in ordered:
+        m.index = ordered.index(m)
+    return ordered
 
 
 # Converts HSV values to paint's standard
