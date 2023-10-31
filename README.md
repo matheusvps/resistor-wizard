@@ -6,7 +6,7 @@ This GitHub repository hosts the code for the Resistor Sorter project, developed
 
 ## Team Members
 
-- **Matheus Passos** - Frontend Development and Project Integration
+- **Matheus Passos** - Fullstack Development and Project Integration
 - **Jhony Minetto** - Backend Development, Algorithm Design and ML Training
 - **Ricardo Marthus** - Conception of 3D models and Image Labelling for the dataset
 
