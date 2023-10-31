@@ -2,7 +2,7 @@
 import numpy as np
 import cv2 as cv
 import os
-from time import time
+from time import time, sleep
 
 CROP_AMOUNT = 3
 SCALE_BBOX = 0.5
@@ -168,10 +168,6 @@ def order_masks(masks, inference):
     return ordered
 
 
-# Converts HSV values to paint's standard
-def cvtHSV(hsv):
-    return [int(i) for i in [hsv[0]*2, 0.3922*hsv[1], 0.3922*hsv[2]]]
-
 # Runs and records the execution time of a function
 def timer(func, *args, printout=False):
     """
@@ -191,6 +187,7 @@ def timer(func, *args, printout=False):
     if printout:
         print(f"Function \033[94m {func.__name__} \033[0m took {dt:.{2}f}s to run.")
     return res, dt
+
 
 
 
