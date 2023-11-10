@@ -1,5 +1,4 @@
 # ----------------------  IMPORTS  -------------------------- #
-from utils import *  # Other global parameters are defined here
 from ultralytics import YOLO
 from PIL import Image
 import csv
@@ -11,7 +10,6 @@ import os
 import RPi.GPIO as GPIO
 
 # ----------------------------------------------------------- #
-
 
 
 CROP_AMOUNT = 3
@@ -28,12 +26,12 @@ MAX_IPS = 1 # Maximum number of iterations per second
 # MOSFETs Toggle
 ToggleLED, ToggleServo = 18, 16
 # Servos
-Servo_Dispenser_Cima = -1
-Servo_Dispenser_Baixo = -1
-Servo_Plataforma = -1
+Servo_Dispenser_Cima = 11
+Servo_Dispenser_Baixo = 13
+Servo_Plataforma = 15
 # Motor de Passo
-Direcao_SM = -1
-Passo_SM = -1
+Passo_SM = 3
+Direcao_SM = 5
 # Lista de Pinos usados
 Pinos = [
          ToggleLED, 
@@ -47,7 +45,8 @@ Pinos = [
 
 # ------------------ SETUP RASPBERRY PI --------------------- #
 GPIO.setmode(GPIO.BOARD)
-GPIO.setup(Pinos, GPIO.OUT)
+for pino in Pinos:
+    GPIO.setup(pino, GPIO.OUT)
 
 minDeltaT = 1e-5 # sec
 stepsPerRevolution = 200

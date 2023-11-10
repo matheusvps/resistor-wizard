@@ -182,21 +182,63 @@ def timer(func, *args, printout=False):
 
 
 class Motor:
-    def __init__(self, stepPin, dirPin, stepsPerRev, minDt):
+    def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT):
         self.stepPin = stepPin
         self.dirPin = dirPin
         self.stepsPerRev = stepsPerRev
         self.minDt = minDt
-        self.position = 0  # Position measured in degrees
-        self.speed = 1  # Revs per sec
+        self.position = 0  # Position measured in steps (0 is at startup, before homing)
+        self.direction = 1 # 1 for HIGH on dirPin, 0 for LOW
+        self.speed = 50  # Steps per sec
+        self.max_speed = 400
+        self.accel = 3  # Acceleration in frequency change per sec
         self.tDelay = 0  # Calculated based on self.speed
+        self.max_move_time = 2 # Max time duration in seconds of any movement (while keeping speed under max_speed)
+        self.accel_percent = 0.35
+    # Updates Motors stats
+    def update(self):
+        if self.speed > self.max_speed:
+            self.speed = self.max_speed
+        self.tDelay = 1/self.speed
+        print(self.speed)
     # Sends a step signal to the Stepper Motor
-    def step():
-        GPIO.output(Passo_SM, GPIO.HIGH)
-        sleep(minDeltaT)
-        GPIO.output(Passo_SM, GPIO.LOW)
-        sleep(minDeltaT)
-    
+    def step(self):
+        GPIO.output(self.stepPin, GPIO.HIGH)
+        sleep(self.minDt)
+        GPIO.output(self.stepPin, GPIO.LOW)
+        sleep(self.minDt)
+        if self.direction == 1:
+            self.position += 1
+        else:
+            self.position -= 1
+    # Inverts direction of the motor rotation
+    def invertDirection(self):
+        GPIO.output(self.dirPin, not GPIO.input(self.dirPin))
+        self.direction = int(not self.direction)  # Toggles direction
+    # Stes the direction of rotation of the motor
+    def setDirection(self, dir: int):
+        GPIO.output(self.dirPin, bool(dir))
+        self.direction = dir
+    #
+    def goTo(self, pos: int):  # Position given in STEPS!
+        #pos %= self.stepsPerRev
+        if (pos - self.position) < 0:
+            self.setDirection(0)
+        else:
+            self.setDirection(1)
+        numSteps = abs(self.position - pos)
+        for i in range(numSteps):
+            if 0 <= (i/numSteps) < self.accel_percent:
+                self.speed += self.accel
+            elif (1-self.accel_percent) <= (i/numSteps) < 1.0 and self.speed > self.accel:
+                self.speed -= self.accel
+            self.update()
+            self.step()
+            sleep(self.tDelay)
+
+mot = Motor()
+
+mot.goTo(100)
     
 
 
