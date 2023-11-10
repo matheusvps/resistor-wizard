@@ -2,16 +2,9 @@
 #  * Servos and motor control
 #  * Camera and light control
 #  * Resistor recognition
+# ----------------------------------------------------------- #
+from globals import *
 
-# ----------------------  IMPORTS  -------------------------- #
-from utils import *  # Other global parameters are defined here
-from ultralytics import YOLO
-from PIL import Image
-import csv
-
-# ----------------------  GLOBALs  -------------------------- #
-CAMERA_INDEX = 0
-MAX_IPS = 1 # Maximum number of iterations per second
 # ----------------------------------------------------------- #
 
 def main():
