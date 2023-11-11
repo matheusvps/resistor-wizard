@@ -89,7 +89,7 @@ function ResistanceForm() {
     }
 
     try {
-      const response = await fetch('/api/send_resistances', {
+      const response = await fetch(`http://JHONY_PUT_THE_RASP_IP:5000/api/send_resistances`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
