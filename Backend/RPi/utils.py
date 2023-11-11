@@ -182,7 +182,7 @@ def timer(func, *args, printout=False):
 
 
 class Motor:
-    def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT):
+    def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT, logging=False):
         self.stepPin = stepPin
         self.dirPin = dirPin
         self.stepsPerRev = stepsPerRev
@@ -190,17 +190,23 @@ class Motor:
         self.position = 0  # Position measured in steps (0 is at startup, before homing)
         self.direction = 1 # 1 for HIGH on dirPin, 0 for LOW
         self.speed = 50  # Steps per sec
-        self.max_speed = 400
-        self.accel = 3  # Acceleration in frequency change per sec
+        self.min_speed = 50
+        self.max_speed = 350
+        self.accel = 5  # Acceleration in frequency change per sec
         self.tDelay = 0  # Calculated based on self.speed
         self.max_move_time = 2 # Max time duration in seconds of any movement (while keeping speed under max_speed)
-        self.accel_percent = 0.35
+        self.accel_steps = int((self.max_speed-self.min_speed)/self.accel)
+        self.logger = logging
     # Updates Motors stats
-    def update(self):
-        if self.speed > self.max_speed:
+    def update(self, safe_mode=True):
+        if safe_mode and self.speed > self.max_speed:
             self.speed = self.max_speed
-        self.tDelay = 1/self.speed
-        print(self.speed)
+        elif safe_mode and self.speed < self.min_speed:
+            self.speed = self.min_speed
+        self.position %= self.stepsPerRev
+        self.tDelay = (1/self.speed) - 2*minDeltaT
+        if self.logger == True:
+            print(f"Position: {self.position}\t Direction: {self.direction}\t Speed: {int(self.speed)}\t Delay: {self.tDelay:.4f}")
     # Sends a step signal to the Stepper Motor
     def step(self):
         GPIO.output(self.stepPin, GPIO.HIGH)
@@ -219,27 +225,84 @@ class Motor:
     def setDirection(self, dir: int):
         GPIO.output(self.dirPin, bool(dir))
         self.direction = dir
-    #
-    def goTo(self, pos: int):  # Position given in STEPS!
+    # Formats the ratio of variables to [0-1]
+    def formatRatio(self, b, a):
+        if b>a:
+            return 1
+        return b/a
+    # Rotates the motor "pos" steps
+    def move(self, pos: int):  # Position given in STEPS!
+        print(f"Accel Steps: {self.accel_steps}")
         #pos %= self.stepsPerRev
         if (pos - self.position) < 0:
             self.setDirection(0)
         else:
             self.setDirection(1)
         numSteps = abs(self.position - pos)
-        for i in range(numSteps):
-            if 0 <= (i/numSteps) < self.accel_percent:
-                self.speed += self.accel
-            elif (1-self.accel_percent) <= (i/numSteps) < 1.0 and self.speed > self.accel:
-                self.speed -= self.accel
+        for i in range(numSteps+1):
+            if i < int(self.accel_steps * self.formatRatio(numSteps, 2*self.accel_steps)):
+                self.speed += self.accel * self.formatRatio(numSteps, 2*self.accel_steps)
+            elif numSteps - int(self.accel_steps * self.formatRatio(numSteps, 2*self.accel_steps)) <= i:
+                self.speed -= self.accel * self.formatRatio(numSteps, 2*self.accel_steps)
             self.update()
             self.step()
             sleep(self.tDelay)
 
-mot = Motor()
+class Dispenser:
+    def __init__(self, togglePin=ToggleServo, topBladePin=Servo_Dispenser_Cima, bottomBladePin=Servo_Dispenser_Baixo, logging=False):
+        self.topBlade = GPIO.PWM(topBladePin, 50)
+        self.bottomBlade =  GPIO.PWM(bottomBladePin, 50)
+        self.power_state = False
+        self.power_pin = togglePin
+        self.logger = logging
+        #
+        self.topBlade.start(0)
+        self.bottomBlade.start(0)
+    # Defines Power state for ALL(!!) Servos
+    def Power(self, state=True):
+        if self.power_state != state:
+            self.power_state = state
+            GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state))
+    #
+    def vibrate():
+        pass
+    # Sequence to drop a single resistor
+    def drop(self):
+        self.Power()
+        self.topBlade.ChangeDutyCycle()
+    def __del__(self):
+        self.topBlade.stop()
+        self.bottomBlade.stop()
+        self.Power(state=False)
 
-mot.goTo(100)
-    
+class CustomError(Exception):
+    """Custom error class."""
+    pass
+
+class Camera:
+    def __init__(self, index=CAMERA_INDEX, focus=CAMERA_FOCUS):
+        self.index = index
+        self.focus = focus
+        self.primed = False
+        # Sets camera's capture properties
+        self.dev = cv.VideoCapture(self.index)
+        self.dev.set(cv.CAP_PROP_FOCUS, self.focus)
+        self.dev.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
+        self.dev.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+    #  Starts camera and adjusts exposure 
+    def start(self):
+        if self.primed:
+            return
+        for i in range(5):  # Reads 5 images to prime the input
+            _, _ = self.dev.read()
+        self.primed = True
+    # Captures image from camera
+    def capture(self):
+        return self.dev.read()
+    # Class destroyer
+    def __del__(self):
+        self.dev.release()
+        cv.destroyAllWindows()
 
 
 

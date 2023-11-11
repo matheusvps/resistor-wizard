@@ -20,6 +20,7 @@ tmp_mask = os.path.join(tmp_dir, "mask.png")
 
 # -----------------------  GERAL  --------------------------- #
 CAMERA_INDEX = 0
+CAMERA_FOCUS = 100
 MAX_IPS = 1 # Maximum number of iterations per second
 
 # ------------------ PINOS RASPBERRY Pi --------------------- #
