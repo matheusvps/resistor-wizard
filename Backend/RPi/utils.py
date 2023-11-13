@@ -182,9 +182,10 @@ def timer(func, *args, printout=False):
 
 
 class Motor:
-    def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT, logging=False):
+    def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, sleepPin=Sleep_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT, logging=False):
         self.stepPin = stepPin
         self.dirPin = dirPin
+        self.sleepPin = sleepPin
         self.stepsPerRev = stepsPerRev
         self.minDt = minDt
         self.position = 0  # Position measured in steps (0 is at startup, before homing)
@@ -197,6 +198,12 @@ class Motor:
         self.max_move_time = 2 # Max time duration in seconds of any movement (while keeping speed under max_speed)
         self.accel_steps = int((self.max_speed-self.min_speed)/self.accel)
         self.logger = logging
+    # Puts Motor driver on SLEEP mode
+    def Sleep(self, state=True):
+        if state == True:
+            GPIO.output(self.sleepPin, GPIO.LOW)
+        else:
+            GPIO.output(self.sleepPin, GPIO.HIGH)
     # Updates Motors stats
     def update(self, safe_mode=True):
         if safe_mode and self.speed > self.max_speed:
@@ -205,6 +212,7 @@ class Motor:
             self.speed = self.min_speed
         self.position %= self.stepsPerRev
         self.tDelay = (1/self.speed) - 2*minDeltaT
+        # Logging
         if self.logger == True:
             print(f"Position: {self.position}\t Direction: {self.direction}\t Speed: {int(self.speed)}\t Delay: {self.tDelay:.4f}")
     # Sends a step signal to the Stepper Motor
@@ -232,7 +240,7 @@ class Motor:
         return b/a
     # Rotates the motor "pos" steps
     def move(self, pos: int):  # Position given in STEPS!
-        print(f"Accel Steps: {self.accel_steps}")
+        self.Sleep(False)
         #pos %= self.stepsPerRev
         if (pos - self.position) < 0:
             self.setDirection(0)
@@ -247,6 +255,7 @@ class Motor:
             self.update()
             self.step()
             sleep(self.tDelay)
+        self.Sleep(True)
 
 class Dispenser:
     def __init__(self, togglePin=ToggleServo, topBladePin=Servo_Dispenser_Cima, bottomBladePin=Servo_Dispenser_Baixo, logging=False):
@@ -263,13 +272,27 @@ class Dispenser:
         if self.power_state != state:
             self.power_state = state
             GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state))
-    #
+    # Function that vibrates the servos so as to makes the resistors fall
     def vibrate():
         pass
     # Sequence to drop a single resistor
     def drop(self):
+        delay = 0.3
         self.Power()
-        self.topBlade.ChangeDutyCycle()
+        sleep(0.05)
+        self.topBlade.ChangeDutyCycle(11.5)
+        self.bottomBlade.ChangeDutyCycle(2)
+        sleep(delay)
+        self.topBlade.ChangeDutyCycle(10)
+        sleep(delay)
+        self.topBlade.ChangeDutyCycle(11.5)
+        sleep(delay)
+        self.bottomBlade.ChangeDutyCycle(3)
+        sleep(delay)
+        self.bottomBlade.ChangeDutyCycle(2)
+        sleep(delay)
+        self.Power(False)
+        
     def __del__(self):
         self.topBlade.stop()
         self.bottomBlade.stop()
@@ -280,32 +303,68 @@ class CustomError(Exception):
     pass
 
 class Camera:
-    def __init__(self, index=CAMERA_INDEX, focus=CAMERA_FOCUS):
+    def __init__(self, index=CAMERA_INDEX, focus=CAMERA_FOCUS, exposure=CAMERA_EXPOSURE, toggleLED=ToggleLED):
         self.index = index
         self.focus = focus
+        self.exposure = exposure
+        self.powerLED = toggleLED
         self.primed = False
         # Sets camera's capture properties
         self.dev = cv.VideoCapture(self.index)
+        self.dev.set(cv.CAP_PROP_BUFFERSIZE, 1)
+        self.dev.set(cv.CAP_PROP_AUTO_EXPOSURE, 1)
+        self.dev.set(cv.CAP_PROP_EXPOSURE, self.exposure)
         self.dev.set(cv.CAP_PROP_FOCUS, self.focus)
-        self.dev.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
         self.dev.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+        self.dev.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
     #  Starts camera and adjusts exposure 
     def start(self):
         if self.primed:
             return
+        GPIO.output(self.powerLED, GPIO.HIGH)
         for i in range(5):  # Reads 5 images to prime the input
             _, _ = self.dev.read()
         self.primed = True
+        GPIO.output(self.powerLED, GPIO.LOW)
     # Captures image from camera
     def capture(self):
-        return self.dev.read()
+        GPIO.output(self.powerLED, GPIO.HIGH)
+        sleep(0.1)
+        img = self.dev.read()
+        sleep(0.1)
+        GPIO.output(self.powerLED, GPIO.LOW)
+        return img
     # Class destroyer
     def __del__(self):
         self.dev.release()
         cv.destroyAllWindows()
 
-
-
+class Plataforma:
+    def __init__(self, togglePin=ToggleServo, platPin=Servo_Plataforma, logging=False):
+        self.control = GPIO.PWM(platPin, 50)
+        self.power_state = False
+        self.power_pin = togglePin
+        self.logger = logging
+        #
+        self.control.start(0)
+    # Defines Power state for ALL(!!) Servos
+    def Power(self, state=True):
+        if self.power_state != state:
+            self.power_state = state
+            GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state)) 
+    # Ejects the resistor from the platform
+    def eject(self):
+        delay = 0.3
+        self.Power()
+        sleep(0.05)
+        self.control.ChangeDutyCycle(2)
+        sleep(delay)
+        self.control.ChangeDutyCycle(8)
+        sleep(delay)
+        self.control.ChangeDutyCycle(2)
+        sleep(delay)
+        self.Power(False)
+        
 
 
 
