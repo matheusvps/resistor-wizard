@@ -20,7 +20,7 @@ def main():
 
     motor.Sleep()
     camera.start()
-    if len(sys.argv) > 1 and sys.argv[1] != '--no-renew':
+    if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
         plataforma.eject()
 
     while True :  # ~ CHANGE CONDITION TO WHILE SERVER IS ON OR CAMERA RECOGNIZES RESISTORS ~
@@ -30,7 +30,7 @@ def main():
         if key == 27:  # Press 'ESC' to exit the loop
             break
         
-        if len(sys.argv) > 1 and sys.argv[1] != '--no-renew':
+        if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             dispenser.drop()  # Drops ONE resistor onto the platform
         sleep(0.3)  # Waits for the resistor to fall onto the platform
         ret, frame = camera.capture()
@@ -74,15 +74,13 @@ def main():
             #    know in which direction to start, so by default it 
             #    uses the leftmost (0,0) point as a beginning.
             ordered, _ = timer(order_masks, masks, colorbands_infr, printout=True)
-            if len(ordered) > 1:
-                motor.move(100)
         
             for i in range(len(ordered)):
                 print(f"BBOX: {[int(j) for j in ordered[i].bbox[:4]]} \t Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)}")
         except Exception as e:
             print(e)
 
-        if len(sys.argv) > 1 and sys.argv[1] != '--no-renew':
+        if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             plataforma.eject()
 
         # This needs to be the LAST line on the loop

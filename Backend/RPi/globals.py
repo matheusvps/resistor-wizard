@@ -21,7 +21,7 @@ tmp_mask = os.path.join(tmp_dir, "mask.png")
 
 # -----------------------  GERAL  --------------------------- #
 CAMERA_INDEX = -1
-CAMERA_FOCUS = 800
+CAMERA_FOCUS = 900
 CAMERA_EXPOSURE = 90
 MAX_IPS = 10 # Maximum number of iterations per second
 
