@@ -89,7 +89,7 @@ function ResistanceForm() {
     }
 
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/send_resistances`, {
+      const response = await fetch(`http://resistorwizard.local:5000/api/send_resistances`, {
         method: 'POST',
         credentials:'include',
         // mode: 'cors',
