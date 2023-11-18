@@ -366,32 +366,44 @@ class Plataforma:
         self.Power(False)
 
 class Receiver:
-    def __init__(self, port, ip, isRunning):
+    def __init__(self, port, ip, is_running, array_size, resistances, margins):
         self.port = port
         self.ip = ip
-        self.is_running = isRunning
+        self.is_running = is_running
+        self.arrSize = array_size
+        self.resistances = resistances  #
+        self.margins = margins          #
         self.app = Flask(__name__)
         CORS(self.app, supports_credentials=True)
         self.app.config['CORS_HEADERS'] = 'Content-Type'
-    #
-    @self.app.route('/api/send_resistances', methods=['OPTIONS'])
-    @cross_origin(supports_credentials=True)
-    def options():
-        return '', 204
-    #
-    @self.app.route("/api/send_resistances", methods=['OPTIONS', 'POST'])
-    @cross_origin(supports_credentials=True)
-    def receive_resistances():
-        resistances = request.json[0]
-        print(resistances)
-        return resistances
-    #
-    @self.app.route("/api/stop", methods=['OPTIONS', 'POST'])
-    @cross_origin(supports_credentials=True)    
-    def stop():
-        self.is_running.value = 0
-        return 'OK'
-    #
+        
+        # Set up routes dynamically based on instance attributes
+        self.setup_routes()
+
+    def setup_routes(self):
+        @self.app.route('/api/send_resistances', methods=['OPTIONS', 'POST'])
+        @cross_origin(supports_credentials=True)
+        def receive_resistances():
+            self.is_running.value = True
+            resistances = request.json
+            self.update_array(self.resistances, [res["resistance"] for res in resistances])
+            self.update_array(self.margins, [res["margin"] for res in resistances])
+            print(resistances)
+            return jsonify({"message": "Data received successfully"})
+
+        @self.app.route("/api/stop", methods=['OPTIONS', 'POST'])
+        @cross_origin(supports_credentials=True)    
+        def stop():
+            self.is_running.value = False
+            return 'OK'
+
+    def update_array(self, target, values):
+        for i in range(min(self.arrSize, len(values))):
+            try:
+                target[i] = int(values[i])
+            except ValueError:
+                continue
+
     def start(self):
         self.app.run(host=self.ip, port=self.port)
     

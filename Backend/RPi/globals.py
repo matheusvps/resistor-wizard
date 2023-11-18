@@ -6,6 +6,11 @@ import numpy as np
 import cv2 as cv
 from time import time, sleep
 import os, sys
+from multiprocessing import Process, Value, Array
+import json
+import ctypes
+from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS, cross_origin
 
 import RPi.GPIO as GPIO
 
@@ -21,8 +26,8 @@ tmp_mask = os.path.join(tmp_dir, "mask.png")
 
 # -----------------------  GERAL  --------------------------- #
 CAMERA_INDEX = -1
-CAMERA_FOCUS = 900
-CAMERA_EXPOSURE = 90
+CAMERA_FOCUS = 0
+CAMERA_EXPOSURE = 1023
 MAX_IPS = 10 # Maximum number of iterations per second
 
 # ------------------ PINOS RASPBERRY Pi --------------------- #
@@ -58,7 +63,7 @@ stepsPerRevolution = 200
 
 # ------------------ RECEIVER VARIABLES ----------------------------------- #
 PORT = 5000
-IP: '0.0.0.0'
+IP = "0.0.0.0"
 
 
 # ----------------------------------------------------------- #
