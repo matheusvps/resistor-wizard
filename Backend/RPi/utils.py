@@ -357,11 +357,11 @@ class Plataforma:
         delay = 0.3
         self.Power()
         sleep(0.05)
-        self.control.ChangeDutyCycle(2)
+        self.control.ChangeDutyCycle(2.3)
         sleep(delay)
-        self.control.ChangeDutyCycle(8)
+        self.control.ChangeDutyCycle(7)
         sleep(delay)
-        self.control.ChangeDutyCycle(2)
+        self.control.ChangeDutyCycle(2.3)
         sleep(delay)
         self.Power(False)
         
