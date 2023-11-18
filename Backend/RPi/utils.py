@@ -364,8 +364,37 @@ class Plataforma:
         self.control.ChangeDutyCycle(2)
         sleep(delay)
         self.Power(False)
-        
 
+class Receiver:
+    def __init__(self, port, ip, isRunning):
+        self.port = port
+        self.ip = ip
+        self.is_running = isRunning
+        self.app = Flask(__name__)
+        CORS(self.app, supports_credentials=True)
+        self.app.config['CORS_HEADERS'] = 'Content-Type'
+    #
+    @self.app.route('/api/send_resistances', methods=['OPTIONS'])
+    @cross_origin(supports_credentials=True)
+    def options():
+        return '', 204
+    #
+    @self.app.route("/api/send_resistances", methods=['OPTIONS', 'POST'])
+    @cross_origin(supports_credentials=True)
+    def receive_resistances():
+        resistances = request.json[0]
+        print(resistances)
+        return resistances
+    #
+    @self.app.route("/api/stop", methods=['OPTIONS', 'POST'])
+    @cross_origin(supports_credentials=True)    
+    def stop():
+        self.is_running.value = 0
+        return 'OK'
+    #
+    def start(self):
+        self.app.run(host=self.ip, port=self.port)
+    
 
 
 

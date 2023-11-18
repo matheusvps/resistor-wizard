@@ -5,25 +5,33 @@
 # ----------------------------------------------------------- #
 from globals import *
 from utils import *
+from multiprocessing import Process
 
 # ----------------------------------------------------------- #
+def run_receiver(rec):
+    rec.start()
+
 
 def main():
     camera = Camera()
     motor = Motor()
     dispenser = Dispenser()
     plataforma = Plataforma()
+    receiver = Receiver(port=PORT, ip=IP, isRunning=True)
+
+    receiver_process = Process(target=run_receiver, args=(receiver))
+    receiver_process.start()
+    
     # Loads Recognition models
     cropper = YOLO("../LATEST/cropper.pt")
     color_bands = YOLO("../LATEST/segmenter.pt")
-
 
     motor.Sleep()
     camera.start()
     if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
         plataforma.eject()
 
-    while True :  # ~ CHANGE CONDITION TO WHILE SERVER IS ON OR CAMERA RECOGNIZES RESISTORS ~
+    while receiver.is_running:        
         #start = time()
         # Check for user input to adjust exposure and focus
         key = cv.waitKey(1) & 0xFF
@@ -93,6 +101,7 @@ def main():
     camera.__del__()
     dispenser.__del__()
     GPIO.cleanup()
+    receiver_process.terminate()
 
 
 if __name__=="__main__":
