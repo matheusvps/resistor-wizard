@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import ResistorComponent from './resistorComponent';
 import { toast } from 'react-toastify';
+import { HourGlass } from 'react-awesome-spinners'
+
 
 function ResistanceForm() {
   const [resistances, setResistances] = useState(Array(5).fill(''));
   const [margins, setMargins] = useState(Array(5).fill(''));
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
 
   const findNearestResistance = (inputValue) => {
     const inputValueString = inputValue.toString().split('.')[0];
@@ -72,6 +75,8 @@ function ResistanceForm() {
   };
 
   const handleFormSubmission = async () => {
+    setIsRunning(true);
+
     if (resistances.every(resistance => resistance === '') || margins.every(margin => margin === '')) {
       toast.error('Por favor, insira pelo menos uma resistência e uma margem antes de enviar os dados.', {
         position: toast.POSITION.TOP_CENTER,
@@ -118,34 +123,87 @@ function ResistanceForm() {
     }
   };
 
+  const handleStopButtonClick = async () => {
+    try {
+      const response = await fetch(`http://resistorwizard.local:5000/api/stop`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        toast.success('Processo interrompido com sucesso', {
+          position: toast.POSITION.TOP_CENTER,
+          autoClose: 3000,
+        });
+        setIsRunning(false);
+      } else {
+        toast.error('Erro ao interromper o processo', {
+          position: toast.POSITION.TOP_CENTER,
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Ocorreu um erro ao interromper o processo', {
+        position: toast.POSITION.TOP_CENTER,
+        autoClose: 3000,
+      });
+    }
+  };
+
   return (
     <div>
-      <label htmlFor={`resistance${currentIndex}`}>Resistance {currentIndex + 1}</label>
-      <input
-        type="number"
-        step="any"
-        name={`resistance${currentIndex}`}
-        value={resistances[currentIndex] || ''}
-        onChange={e => handleInputChange(currentIndex, e.target.value, 'resistance')}
-      />
+      {isRunning ? (
+        <div
+          className="loading-container"
+        >
+          <span
+            className="loading-title"
+          >
+          Em Andamento 
+          </span>
+          <HourGlass
+          color="#FFFFFF"
+          />
+        </div>
+      ) : (
+        <div>
+          <label htmlFor={`resistance${currentIndex}`}>Resistance {currentIndex + 1}</label>
+          <input
+            type="number"
+            step="any"
+            name={`resistance${currentIndex}`}
+            value={resistances[currentIndex] || ''}
+            onChange={e => handleInputChange(currentIndex, e.target.value, 'resistance')}
+          />
   
-      <label htmlFor={`margin${currentIndex}`}>Margin {currentIndex + 1}</label>
-      <input
-        type="number"
-        step="any"
-        name={`margin${currentIndex}`}
-        value={margins[currentIndex] || ''}
-        onChange={e => handleInputChange(currentIndex, e.target.value, 'margin')}
-      />
+          <label htmlFor={`margin${currentIndex}`}>Margin {currentIndex + 1}</label>
+          <input
+            type="number"
+            step="any"
+            name={`margin${currentIndex}`}
+            value={margins[currentIndex] || ''}
+            onChange={e => handleInputChange(currentIndex, e.target.value, 'margin')}
+          />
   
-      <div className="buttons">
-        {currentIndex > 0 && (
-          <button onClick={handlePreviousInput} className="button">Previous</button>
-        )}
-        <button onClick={handleNextInput} className="button">Next</button>
-        <button onClick={handleFormSubmission}>Submit</button>
-      </div>
+          <div className="buttons">
+            {currentIndex > 0 && (
+              <button onClick={handlePreviousInput} className="button">Previous</button>
+            )}
+            <button onClick={handleNextInput} className="button">Next</button>
+            <button onClick={handleFormSubmission}>Submit</button>
+          </div>
+        </div>
+      )}
       <ResistorComponent resistance={parseFloat(resistances[currentIndex])} />
+      <div>
+        {isRunning && (
+          <button onClick={handleStopButtonClick} className="stop-button">Parar</button>
+        )}
+      </div>
     </div>
   );
 }
