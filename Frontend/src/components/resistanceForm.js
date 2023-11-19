@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import ResistorComponent from './resistorComponent';
 import { toast } from 'react-toastify';
-import { HourGlass } from 'react-awesome-spinners'
-
+import ClipLoader from "react-spinners/ClipLoader";
 
 function ResistanceForm() {
   const [resistances, setResistances] = useState(Array(5).fill(''));
@@ -165,8 +164,9 @@ function ResistanceForm() {
           >
           Em Andamento 
           </span>
-          <HourGlass
-          color="#FFFFFF"
+          <ClipLoader
+            color="rgba(0, 224, 255, 1)"
+            speedMultiplier={0.4}
           />
         </div>
       ) : (
