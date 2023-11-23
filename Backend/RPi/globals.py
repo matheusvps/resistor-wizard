@@ -55,9 +55,9 @@ Pinos = [
         ]
 
 # ------------------ SETUP RASPBERRY PI --------------------- #
-# GPIO.setmode(GPIO.BOARD)
-# for pino in Pinos:
-#     GPIO.setup(pino, GPIO.OUT)
+GPIO.setmode(GPIO.BOARD)
+for pino in Pinos:
+    GPIO.setup(pino, GPIO.OUT)
 
 minDeltaT = 2e-6 # 2u sec
 stepsPerRevolution = 200
