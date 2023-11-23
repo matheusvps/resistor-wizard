@@ -1,5 +1,5 @@
 # ----------------------------------------------------------- #
-from globals import *
+from RPi.globals import *
 
 # ----------------------------------------------------------- #
 # Crops a numpy array image using a bounding box
@@ -198,9 +198,10 @@ class Motor:
         self.max_move_time = 2 # Max time duration in seconds of any movement (while keeping speed under max_speed)
         self.accel_steps = int((self.max_speed-self.min_speed)/self.accel)
         self.logger = logging
+        self.powerMode = "eco"  # Eco for economy (aka power off when not moving)
     # Puts Motor driver on SLEEP mode
     def Sleep(self, state=True):
-        if state == True:
+        if state == True and self.powerMode == "eco":
             GPIO.output(self.sleepPin, GPIO.LOW)
         else:
             GPIO.output(self.sleepPin, GPIO.HIGH)

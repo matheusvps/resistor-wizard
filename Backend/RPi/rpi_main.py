@@ -10,7 +10,6 @@ from utils import *
 def run_receiver(rec):
     rec.start()
 
-
 def main():
     camera = Camera()
     motor = Motor()
@@ -61,7 +60,7 @@ def main():
                 raise Exception("Couldn't retrieve frame from stream.")
                 exit()
 
-    
+        
         Image.fromarray(cv.cvtColor(frame, cv.COLOR_BGR2RGB)).save(tmp_photo)
 
         # Runs crop detection model on file

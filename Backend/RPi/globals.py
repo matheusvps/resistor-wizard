@@ -12,7 +12,7 @@ import ctypes
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS, cross_origin
 
-import RPi.GPIO as GPIO
+# import RPi.GPIO as GPIO
 
 # ----------------------------------------------------------- #
 
@@ -41,6 +41,8 @@ Servo_Plataforma = 15
 Passo_SM = 3
 Direcao_SM = 5
 Sleep_SM = 12
+# Sensor de efeito hall
+Hall_effect = -1
 # Lista de Pinos usados
 Pinos = [
          ToggleLED, 
@@ -54,9 +56,9 @@ Pinos = [
         ]
 
 # ------------------ SETUP RASPBERRY PI --------------------- #
-GPIO.setmode(GPIO.BOARD)
-for pino in Pinos:
-    GPIO.setup(pino, GPIO.OUT)
+# GPIO.setmode(GPIO.BOARD)
+# for pino in Pinos:
+#     GPIO.setup(pino, GPIO.OUT)
 
 minDeltaT = 2e-6 # 2u sec
 stepsPerRevolution = 200
