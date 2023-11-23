@@ -312,6 +312,7 @@ class Motor:
         self.move(167)
         return False
 
+
 class Dispenser:
     def __init__(self, togglePin=ToggleServo, topBladePin=Servo_Dispenser_Cima, bottomBladePin=Servo_Dispenser_Baixo, logging=False):
         self.topBlade = GPIO.PWM(topBladePin, 50)

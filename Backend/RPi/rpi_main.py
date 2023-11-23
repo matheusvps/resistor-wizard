@@ -44,7 +44,9 @@ def main():
     for i in range(len(receiver.resistances)):
         motor.storages[i] = [receiver.resistances[i], receiver.margins[i]]
 
-    while receiver.is_running.value:        
+    no_resistor_accum = 0
+    while receiver.is_running.value and no_resistor_accum < 3:
+        resistor_exists = True       
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 func1 = executor.submit(dispenser.drop) # Drops ONE resistor onto the platform
@@ -75,6 +77,7 @@ def main():
             cropped = cropImage(cv.imread(tmp_photo), cropped_infr[0].boxes.cpu().data[0])
         else:
             cropped = cv.imread(tmp_photo)
+            resistor_exists = False
         Image.fromarray(cv.cvtColor(cropped, cv.COLOR_BGR2RGB)).save(tmp_crop)
 
 
@@ -94,18 +97,28 @@ def main():
             #    know in which direction to start, so by default it 
             #    uses the leftmost (0,0) point as a beginning.
             ordered, _ = timer(order_masks, masks, colorbands_infr, printout=True)
+            if len(ordered) == 0:
+                resistor_exists = False
             for i in range(len(ordered)):
                 color, _ = timer(retrieve_color(cvtBGR2HSV(ordered[i].avgColor)), printout=True)
                 resistor[i] = color
         except Exception as e:
             print(e)
 
+        # Retrieves the resistance value and moves motor accordingly
         ret, resistance = get_resistance(resistor)
         found_slot = motor.find_slot(resistance)
-        
+        if not found_slot:
+            print(f"Couldn't find a suitable slot for the resistor...")
+
+        # Handles stopping condition when no resistors are left based on image recognition
+        if not resistor_exists:
+            no_resistor_accum += 1
+        else:
+            no_resistor_accum = 0
+
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             plataforma.eject()
-
 
 
     # CLOSING
