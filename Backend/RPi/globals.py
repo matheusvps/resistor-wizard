@@ -19,10 +19,30 @@ import RPi.GPIO as GPIO
 
 CROP_AMOUNT = 3
 SCALE_BBOX = 0.5
+
 tmp_dir = os.path.join(os.getcwd(),"tmp")
 tmp_photo = os.path.join(tmp_dir, "photo.png")
 tmp_crop = os.path.join(tmp_dir, "crop.png")
 tmp_mask = os.path.join(tmp_dir, "mask.png")
+
+CSV_DIR = "COLOR_CLASSES"
+HSV_weight = [4, 2, 3]
+csv_files = os.listdir(CSV_DIR)
+
+RESISTANCE_COLOR_VALUES = {
+    'BLACK':0,
+    'BROWN':1,
+    'RED':2,
+    'ORANGE':3,
+    'YELLOW':4,
+    'GREEN':5,
+    'BLUE':6,
+    'VIOLET':7,
+    'GREY':8,
+    'WHITE':9,
+    'GOLD':5,     # TOLERANCE
+    'SILVER':10,  # TOLERANCE
+}
 
 # -----------------------  GERAL  --------------------------- #
 CAMERA_INDEX = -1

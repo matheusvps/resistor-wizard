@@ -14,24 +14,6 @@ def get_centroid(rect):
     return (cX, cY)
 
 
-# Checks if two colors are equal
-def eqq(a,b):
-    if len(a) != len(b):
-        return False
-    for i in range(len(a)):
-        if a[i] != b[i]:
-                return False
-    return True
-
-# Calculates the equivalent vector sum of two vectors/colors
-def vec_sum(v1, v2):
-    if len(v1) != len(v2):
-        raise Exception("Lengths of vectors passed are not the same")
-    out = [0]*len(v1)
-    for i in range(len(v1)):
-        out[i] = v1[i] + v2[i]
-    return out
-
 # Class mask for grouping objects
 class Mask:
     def __init__(self, img, bbox=[], contour=[]):
@@ -181,6 +163,42 @@ def timer(func, *args, printout=False):
     return res, dt
 
 
+# Compares an HSV value to those stored in a CSV file (min, max per line structure)
+def in_range(HSV, file):
+    score = 0
+    minHSV = []
+    maxHSV = []
+    with open(file) as f:
+        minHSV = [int(i) for i in f.readline().split(',')]
+        maxHSV = [int(i) for i in f.readline().split(',')]
+    for i in range(3):
+        if minHSV[i] <= HSV[i] <= maxHSV[i]:
+            score += HSV_weight[i]
+    return score
+
+
+# Attempts to find which class an HSV color belongs to
+def retrieve_color(hsv, files=csv_files):
+    maxScore = -1
+    bestFit = ""
+    for file in files:
+        sc = in_range(hsv, file)
+        if sc > maxScore:
+            maxScore = sc
+            bestFit = sc
+    return "".join(bestFit.split('.')[:-1])
+
+
+# Gets resistance value of resistor from resistance-color table
+def get_resistance(resistor: dict):
+    if len(resistor) < 3:
+        return False, None
+    elif len(resistor) in [3,4]:
+        return True, (RESISTANCE_COLOR_VALUES[resistor[0]]*10 + RESISTANCE_COLOR_VALUES[resistor[1]])*(10**RESISTANCE_COLOR_VALUES[resistor[2]])
+    elif len(resistor) == 5:
+        return True, (RESISTANCE_COLOR_VALUES[resistor[0]]*100 + RESISTANCE_COLOR_VALUES[resistor[1]]*10 + RESISTANCE_COLOR_VALUES[resistor[2]])*(10**RESISTANCE_COLOR_VALUES[resistor[3]])
+
+
 class Motor:
     def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, sleepPin=Sleep_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT, powerSaving=True, logging=False):
         self.stepPin = stepPin
@@ -199,6 +217,13 @@ class Motor:
         self.accel_steps = int((self.max_speed-self.min_speed)/self.accel)
         self.logger = logging
         self.power_save = powerSaving
+        self.storages = {  # index: [resistance, margin, position]
+            0:[-1,-1,0], 
+            1:[-1,-1,33], 
+            2:[-1,-1,67], 
+            3:[-1,-1,100], 
+            4:[-1,-1,133], 
+        }
     # Puts Motor driver on SLEEP mode
     def Sleep(self, state=True):
         if self.power_save == False:
@@ -276,7 +301,16 @@ class Motor:
             self.update()
             sleep(period)
         self.Sleep(True)
-
+    # Finds which storage a resistor must go into and moves the motor to it
+    def find_slot(self, resistance: int):
+        for slot in self.storages.values():
+            if slot[0] == -1:
+                continue
+            if slot[0] - slot[1] <= resistance <= slot[0] + slot[1]:
+                self.move(slot[2])
+                return True
+        self.move(167)
+        return False
 
 class Dispenser:
     def __init__(self, togglePin=ToggleServo, topBladePin=Servo_Dispenser_Cima, bottomBladePin=Servo_Dispenser_Baixo, logging=False):
@@ -319,9 +353,11 @@ class Dispenser:
         self.bottomBlade.stop()
         self.Power(state=False)
 
+
 class CustomError(Exception):
     """Custom error class."""
     pass
+
 
 class Camera:
     def __init__(self, index=CAMERA_INDEX, focus=CAMERA_FOCUS, exposure=CAMERA_EXPOSURE, toggleLED=ToggleLED):
@@ -360,6 +396,7 @@ class Camera:
         self.dev.release()
         cv.destroyAllWindows()
 
+
 class Plataforma:
     def __init__(self, togglePin=ToggleServo, platPin=Servo_Plataforma, logging=False):
         self.control = GPIO.PWM(platPin, 50)
@@ -385,6 +422,7 @@ class Plataforma:
         self.control.ChangeDutyCycle(2.3)
         sleep(delay)
         self.Power(False)
+
 
 class Receiver:
     def __init__(self, port, ip, is_running, array_size, resistances, margins):

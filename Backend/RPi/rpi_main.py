@@ -30,8 +30,8 @@ def main():
     receiver_process.start()
     
     # Loads Recognition models
-    cropper = YOLO("../LATEST/cropper.pt")
-    color_bands = YOLO("../LATEST/segmenter.pt")
+    cropper = YOLO("LATEST/cropper.pt")
+    color_bands = YOLO("LATEST/color_band_segment.pt")
 
     motor.Sleep()
     camera.start()
@@ -41,10 +41,10 @@ def main():
     while not receiver.is_running.value:
         sleep(0.1)
 
+    for i in range(len(receiver.resistances)):
+        motor.storages[i] = [receiver.resistances[i], receiver.margins[i]]
+
     while receiver.is_running.value:        
-        #start = time()
-        # Check for user input to adjust exposure and focus
-        
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 func1 = executor.submit(dispenser.drop) # Drops ONE resistor onto the platform
@@ -52,7 +52,7 @@ def main():
                 # Wait for both to complete
                 concurrent.futures.wait([func1, func2])
             
-        sleep(0.3)  # Waits for the resistor to fall onto the platform
+        sleep(0.1)  # Waits for the resistor to fall onto the platform
         ret, frame = camera.capture()
         ret, frame = camera.capture()
         if not ret:
@@ -85,6 +85,8 @@ def main():
             colorbands_infr = color_bands(tmp_photo, conf=0.6, iou=0.3)
 
 
+        resistor = dict()
+
         try:
             # Gets masks objects from the inference
             masks, _ = timer(get_segmentation_masks, tmp_crop, colorbands_infr, printout=True)
@@ -92,12 +94,15 @@ def main():
             #    know in which direction to start, so by default it 
             #    uses the leftmost (0,0) point as a beginning.
             ordered, _ = timer(order_masks, masks, colorbands_infr, printout=True)
-        
             for i in range(len(ordered)):
-                print(f"BBOX: {[int(j) for j in ordered[i].bbox[:4]]} \t Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)}")
+                color, _ = timer(retrieve_color(cvtBGR2HSV(ordered[i].avgColor)), printout=True)
+                resistor[i] = color
         except Exception as e:
             print(e)
 
+        ret, resistance = get_resistance(resistor)
+        found_slot = motor.find_slot(resistance)
+        
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             plataforma.eject()
 
