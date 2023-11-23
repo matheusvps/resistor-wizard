@@ -182,7 +182,7 @@ def timer(func, *args, printout=False):
 
 
 class Motor:
-    def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, sleepPin=Sleep_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT, logging=False):
+    def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, sleepPin=Sleep_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT, powerSaving=True, logging=False):
         self.stepPin = stepPin
         self.dirPin = dirPin
         self.sleepPin = sleepPin
@@ -198,8 +198,12 @@ class Motor:
         self.max_move_time = 2 # Max time duration in seconds of any movement (while keeping speed under max_speed)
         self.accel_steps = int((self.max_speed-self.min_speed)/self.accel)
         self.logger = logging
+        self.power_save = powerSaving
     # Puts Motor driver on SLEEP mode
     def Sleep(self, state=True):
+        if self.power_save == False:
+            GPIO.output(self.sleepPin, GPIO.HIGH)
+            return
         if state == True:
             GPIO.output(self.sleepPin, GPIO.LOW)
         else:
@@ -247,15 +251,32 @@ class Motor:
         else:
             self.setDirection(1)
         numSteps = abs(self.position - pos)
-        for i in range(numSteps+1):
+        for i in range(numSteps):
             if i < int(self.accel_steps * self.formatRatio(numSteps, 2*self.accel_steps)):
                 self.speed += self.accel * self.formatRatio(numSteps, 2*self.accel_steps)
             elif numSteps - int(self.accel_steps * self.formatRatio(numSteps, 2*self.accel_steps)) <= i:
                 self.speed -= self.accel * self.formatRatio(numSteps, 2*self.accel_steps)
-            self.update()
             self.step()
+            self.update()
             sleep(self.tDelay)
         self.Sleep(True)
+    # "Shakes" the motor as to decrease odds of dispenser failing
+    def shake(self):
+        self.Sleep(False)
+        numSteps = 12 # 21,6deg (change according to need)
+        freq = 100 # Hz
+        period = 1/freq
+        for _ in range(numSteps):
+            self.step()
+            self.update()
+            sleep(period)
+        self.invertDirection()  # Inverts the direction of rotation
+        for _ in range(numSteps):
+            self.step()
+            self.update()
+            sleep(period)
+        self.Sleep(True)
+
 
 class Dispenser:
     def __init__(self, togglePin=ToggleServo, topBladePin=Servo_Dispenser_Cima, bottomBladePin=Servo_Dispenser_Baixo, logging=False):

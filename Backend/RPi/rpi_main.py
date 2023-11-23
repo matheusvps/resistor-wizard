@@ -31,7 +31,12 @@ def main():
             break
         
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
-            dispenser.drop()  # Drops ONE resistor onto the platform
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                func1 = executor.submit(dispenser.drop) # Drops ONE resistor onto the platform
+                func2 = executor.submit(motor.shake)  # Shakes the motor while dropping the resistor
+                # Wait for both to complete
+                concurrent.futures.wait([func1, func2])
+            
         sleep(0.3)  # Waits for the resistor to fall onto the platform
         ret, frame = camera.capture()
         ret, frame = camera.capture()
@@ -82,10 +87,6 @@ def main():
 
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             plataforma.eject()
-
-        # This needs to be the LAST line on the loop
-        # if time() - start < (1/MAX_IPS):  # If execution rate is faster than MAX_IPS, wait so as to not overload the processor
-        #     sleep((1/MAX_IPS) - time())
 
 
 
