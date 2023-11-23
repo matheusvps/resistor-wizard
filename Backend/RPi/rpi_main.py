@@ -7,28 +7,43 @@ from globals import *
 from utils import *
 
 # ----------------------------------------------------------- #
+def run_receiver(rec):
+    rec.start()
 
 def main():
     camera = Camera()
     motor = Motor()
     dispenser = Dispenser()
     plataforma = Plataforma()
+
+    is_running = Value('i', False)
+    # Define the structure of the shared array (list of 5 dictionaries)
+    array_size = 5
+
+    # Create a shared array of bytes
+    resistances = Array('i', array_size)
+    margins = Array('i', array_size)
+
+    receiver = Receiver(port=PORT, ip=IP, is_running=is_running, array_size=array_size, resistances=resistances, margins=margins)
+
+    receiver_process = Process(target=run_receiver, args=(receiver,))
+    receiver_process.start()
+    
     # Loads Recognition models
     cropper = YOLO("../LATEST/cropper.pt")
     color_bands = YOLO("../LATEST/segmenter.pt")
-
 
     motor.Sleep()
     camera.start()
     if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
         plataforma.eject()
+    
+    while not receiver.is_running.value:
+        sleep(0.1)
 
-    while True :  # ~ CHANGE CONDITION TO WHILE SERVER IS ON OR CAMERA RECOGNIZES RESISTORS ~
+    while receiver.is_running.value:        
         #start = time()
         # Check for user input to adjust exposure and focus
-        key = cv.waitKey(1) & 0xFF
-        if key == 27:  # Press 'ESC' to exit the loop
-            break
         
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -50,9 +65,7 @@ def main():
                 raise Exception("Couldn't retrieve frame from stream.")
                 exit()
 
-                
-
-
+        
         Image.fromarray(cv.cvtColor(frame, cv.COLOR_BGR2RGB)).save(tmp_photo)
 
         # Runs crop detection model on file
@@ -94,6 +107,7 @@ def main():
     camera.__del__()
     dispenser.__del__()
     GPIO.cleanup()
+    receiver_process.terminate()
 
 
 if __name__=="__main__":
