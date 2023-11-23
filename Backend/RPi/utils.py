@@ -1,4 +1,5 @@
 # ----------------------------------------------------------- #
+from numpy import ndarray
 from RPi.globals import *
 
 # ----------------------------------------------------------- #
@@ -8,7 +9,7 @@ def cropImage(image, box):
 
 
 # Calculates the centroid of a rectangle
-def get_centroid(rect):
+def get_centroid(rect: list[float])-> tuple[float, float]:
     cX = (rect[2] + rect[0])/2
     cY = (rect[3] + rect[1])/2
     return (cX, cY)
@@ -16,10 +17,10 @@ def get_centroid(rect):
 
 # Class mask for grouping objects
 class Mask:
-    def __init__(self, img, bbox=[], contour=[]):
+    def __init__(self, img, bbox = [], contour=[]):
         self.image = img
         self.mask = np.zeros_like(img, dtype=np.uint8)  # creates mask of same size as original image
-        self.avgColor = (None, None, None)
+        self.avgColor: tuple[int, int, int] = (-1, -1, -1)
         self.bbox = bbox
         self.contour = contour
         self.index = -1  # This color's position relative to others
@@ -43,24 +44,24 @@ class Mask:
         self.avgColor = summ/nump
         
     # Checks if a point is inside the mask's bounding box
-    def contains(self, point):
-        if list(point) < self.bbox[0:2].tolist() or list(point) > self.bbox[2:4].tolist():
+    def contains(self, point: tuple[float, float]):
+        if point < self.bbox[0:2].tolist() or point > self.bbox[2:4].tolist():
             return False
         else:
             return True
 
 
 # Calculates the linear regression of the points in a 2D dataset: Y in function of X (Y= a*X + b)
-def lin_reg(data):
+def lin_reg(data: list[tuple[float, float]])-> list[float]:
     X = np.array([i[0] for i in data])
     Y = np.array([i[1] for i in data])
     a = ((len(data) * np.sum(X*Y)) - (np.sum(X) * np.sum(Y)))/(len(data) * np.sum(X*X) - (np.sum(X))**2)
     b = ((np.sum(Y) * np.sum(X*X)) - (np.sum(X) * np.sum(X*Y)))/(len(data) * np.sum(X*X) - (np.sum(X))**2)
-    return a,b
+    return [a,b]
 
 
 # Converts BGR color to HSV (0-360, 0-255, 0-255)
-def cvtBGR2HSV(bgr, paint=False):
+def cvtBGR2HSV(bgr: tuple[int, int, int], paint: bool=False):
     B,G,R = bgr
     Rp = R/255 
     Gp = G/255 
@@ -69,36 +70,36 @@ def cvtBGR2HSV(bgr, paint=False):
     Cmin = min(Rp, Gp, Bp)
     delta = Cmax - Cmin
     #
-    H = 0
+    h = 0
     if delta == 0:
-        H = 0
+        h = 0
     elif Cmax == Rp:
-        H = 60 * (((Gp - Bp) / delta) % 6)
+        h = 60 * (((Gp - Bp) / delta) % 6)
     elif Cmax == Gp:
-        H = 60 * (((Bp - Rp) / delta) + 2)
+        h = 60 * (((Bp - Rp) / delta) + 2)
     elif Cmax == Bp:
-        H = 60 * (((Rp - Gp) / delta) + 4)
+        h = 60 * (((Rp - Gp) / delta) + 4)
     #
     if Cmax == 0:
-        S = 0
+        s = 0
     else:
-        S = delta/Cmax
+        s = delta/Cmax
     #
-    V = Cmax
+    v = Cmax
 
     if paint:
-        S *= 100
-        V *= 100
+        s *= 100
+        v *= 100
     else:
-        S *= 255
-        V *= 255
-    return [int(i) for i in (H,S,V)]
+        s *= 255
+        v *= 255
+    return [int(i) for i in (h,s,v)]
 
 
 # Retrieves the pixels contained in the contours given by the model prediction
-def get_segmentation_masks(img, inference, data=255):
+def get_segmentation_masks(img: str, inference, data: int=255):
     image = cv.imread(img)
-    masks = [Mask(image) for i in range(len(inference[0].masks.xy))]
+    masks = [Mask(image) for _ in range(len(inference[0].masks.xy))]
     for i in range(len(inference[0].masks.xy)):
         polygon = inference[0].masks.xy[i].astype(int)
         masks[i].contour = polygon
@@ -108,7 +109,7 @@ def get_segmentation_masks(img, inference, data=255):
 
 
 # Finds the mask that contains a given point – considers a point can belong to a single mask
-def retrieve_point_in_mask(masks, point):
+def retrieve_point_in_mask(masks: list[Mask], point: tuple[float, float]):
     for mask in masks:
         if mask.contains(point):
             return mask
@@ -116,7 +117,7 @@ def retrieve_point_in_mask(masks, point):
 
 # Calculates the possible orders of the color bands – assumes the bands are approximately
 #     linear, which is reasonable given that resistors follow this standard
-def order_masks(masks, inference):
+def order_masks(masks: list[Mask], inference):
     boxes = inference[0].boxes.cpu().data
     vertex = [v[:4] for v in boxes]
     centroids = [get_centroid(v) for v in vertex]
@@ -132,19 +133,19 @@ def order_masks(masks, inference):
         proj = lv * np.dot(u,lv) / (lv_norm**2)  # Projects the centroid onto the line
         vects[retrieve_point_in_mask(masks, center)] = np.sqrt(np.sum(proj**2))  # Calculates each centroid's distance to origin and associates it to its respective mask
     # Sorts masks by distance
-    sorted_masks = dict(sorted(vects.items(), key=lambda item: item[1]))
+    sorted_masks: dict[Mask, int] = dict(sorted(vects.items(), key=lambda item: item[1]))
 
     #if len(sorted_masks) != len(masks):
     #  ~ TERMINAR CODIGO DE ROTAÇÃO DAS IMAGENS CASO ESTEJA VERTICAL... ~
 
-    ordered = list(sorted_masks)
+    ordered: list[Mask] = list(sorted_masks)
     for m in ordered:
         m.index = ordered.index(m)
     return ordered
 
 
 # Runs and records the execution time of a function
-def timer(func, *args, printout=False):
+def timer(func, *args, printout: bool=False):
     """
         Times the execution of a function\n
         Arguments:\n
@@ -165,7 +166,7 @@ def timer(func, *args, printout=False):
 
 
 # Compares an HSV value to those stored in a CSV file (min, max per line structure)
-def in_range(HSV, file):
+def in_range(HSV: list[int], file: str):
     score = 0
     minHSV = []
     maxHSV = []
@@ -179,7 +180,7 @@ def in_range(HSV, file):
 
 
 # Attempts to find which class an HSV color belongs to
-def retrieve_color(hsv, files=csv_files):
+def retrieve_color(hsv: list[int], files: list[str]=csv_files):
     maxScore = -1
     bestFit = ""
     for file in files:
@@ -191,17 +192,16 @@ def retrieve_color(hsv, files=csv_files):
 
 
 # Gets resistance value of resistor from resistance-color table
-def get_resistance(resistor: dict):
-    if len(resistor) < 3:
-        return False, None
-    elif len(resistor) in [3,4]:
+def get_resistance(resistor: dict[int, str]):
+    if len(resistor) in [3,4]:
         return True, (RESISTANCE_COLOR_VALUES[resistor[0]]*10 + RESISTANCE_COLOR_VALUES[resistor[1]])*(10**RESISTANCE_COLOR_VALUES[resistor[2]])
     elif len(resistor) == 5:
         return True, (RESISTANCE_COLOR_VALUES[resistor[0]]*100 + RESISTANCE_COLOR_VALUES[resistor[1]]*10 + RESISTANCE_COLOR_VALUES[resistor[2]])*(10**RESISTANCE_COLOR_VALUES[resistor[3]])
-
+    else:
+        return False, -1
 
 class Motor:
-    def __init__(self, stepPin=Passo_SM, dirPin=Direcao_SM, sleepPin=Sleep_SM, stepsPerRev=stepsPerRevolution, minDt=minDeltaT, powerSaving=True, logging=False):
+    def __init__(self, stepPin: int=Passo_SM, dirPin: int=Direcao_SM, sleepPin: int=Sleep_SM, stepsPerRev: int=stepsPerRevolution, minDt: float=minDeltaT, powerSaving: bool=True, logging: bool=False):
         self.stepPin = stepPin
         self.dirPin = dirPin
         self.sleepPin = sleepPin
@@ -226,7 +226,7 @@ class Motor:
             4:[-1,-1,133], 
         }
     # Puts Motor driver on SLEEP mode
-    def Sleep(self, state=True):
+    def Sleep(self, state: bool=True):
         if self.power_save == False:
             GPIO.output(self.sleepPin, GPIO.HIGH)
             return
@@ -235,7 +235,7 @@ class Motor:
         else:
             GPIO.output(self.sleepPin, GPIO.HIGH)
     # Updates Motors stats
-    def update(self, safe_mode=True):
+    def update(self, safe_mode: bool=True):
         if safe_mode and self.speed > self.max_speed:
             self.speed = self.max_speed
         elif safe_mode and self.speed < self.min_speed:
@@ -264,7 +264,7 @@ class Motor:
         GPIO.output(self.dirPin, bool(dir))
         self.direction = dir
     # Formats the ratio of variables to [0-1]
-    def formatRatio(self, b, a):
+    def formatRatio(self, b: float, a: float):
         if b>a:
             return 1
         return b/a
@@ -315,7 +315,7 @@ class Motor:
 
 
 class Dispenser:
-    def __init__(self, togglePin=ToggleServo, topBladePin=Servo_Dispenser_Cima, bottomBladePin=Servo_Dispenser_Baixo, logging=False):
+    def __init__(self, togglePin: int=ToggleServo, topBladePin: int=Servo_Dispenser_Cima, bottomBladePin: int=Servo_Dispenser_Baixo, logging: bool=False):
         self.topBlade = GPIO.PWM(topBladePin, 50)
         self.bottomBlade =  GPIO.PWM(bottomBladePin, 50)
         self.power_state = False
@@ -325,7 +325,7 @@ class Dispenser:
         self.topBlade.start(0)
         self.bottomBlade.start(0)
     # Defines Power state for ALL(!!) Servos
-    def Power(self, state=True):
+    def Power(self, state: bool=True):
         if self.power_state != state:
             self.power_state = state
             GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state))
@@ -362,7 +362,7 @@ class CustomError(Exception):
 
 
 class Camera:
-    def __init__(self, index=CAMERA_INDEX, focus=CAMERA_FOCUS, exposure=CAMERA_EXPOSURE, toggleLED=ToggleLED):
+    def __init__(self, index: int=CAMERA_INDEX, focus: int=CAMERA_FOCUS, exposure: int=CAMERA_EXPOSURE, toggleLED: int=ToggleLED):
         self.index = index
         self.focus = focus
         self.exposure = exposure
@@ -400,7 +400,7 @@ class Camera:
 
 
 class Plataforma:
-    def __init__(self, togglePin=ToggleServo, platPin=Servo_Plataforma, logging=False):
+    def __init__(self, togglePin: int=ToggleServo, platPin: int=Servo_Plataforma, logging: bool=False):
         self.control = GPIO.PWM(platPin, 50)
         self.power_state = False
         self.power_pin = togglePin
@@ -408,7 +408,7 @@ class Plataforma:
         #
         self.control.start(0)
     # Defines Power state for ALL(!!) Servos
-    def Power(self, state=True):
+    def Power(self, state: bool=True):
         if self.power_state != state:
             self.power_state = state
             GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state)) 
@@ -427,7 +427,7 @@ class Plataforma:
 
 
 class Receiver:
-    def __init__(self, port, ip, is_running, array_size, resistances, margins):
+    def __init__(self, port: int, ip: str, is_running: SynchronizedBase[Any], array_size: int, resistances, margins):
         self.port = port
         self.ip = ip
         self.is_running = is_running
@@ -445,7 +445,7 @@ class Receiver:
         @self.app.route('/api/send_resistances', methods=['OPTIONS', 'POST'])
         @cross_origin(supports_credentials=True)
         def receive_resistances():
-            self.is_running.value = True
+            self.is_running.value = True # type: ignore
             resistances = request.json
             self.update_array(self.resistances, [res["resistance"] for res in resistances])
             self.update_array(self.margins, [res["margin"] for res in resistances])
@@ -455,10 +455,10 @@ class Receiver:
         @self.app.route("/api/stop", methods=['OPTIONS', 'POST'])
         @cross_origin(supports_credentials=True)    
         def stop():
-            self.is_running.value = False
+            self.is_running.value = False # type: ignore
             return 'OK'
 
-    def update_array(self, target, values):
+    def update_array(self, target: list[int], values: list[int]):
         for i in range(min(self.arrSize, len(values))):
             try:
                 target[i] = int(values[i])

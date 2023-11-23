@@ -11,6 +11,8 @@ import json
 import ctypes
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS, cross_origin
+from multiprocessing.sharedctypes import SynchronizedBase
+from typing import Any
 
 import RPi.GPIO as GPIO
 
@@ -25,9 +27,9 @@ tmp_photo = os.path.join(tmp_dir, "photo.png")
 tmp_crop = os.path.join(tmp_dir, "crop.png")
 tmp_mask = os.path.join(tmp_dir, "mask.png")
 
-CSV_DIR = "COLOR_CLASSES"
+CSVDIR = "COLOR_CLASSES"
 HSV_weight = [4, 2, 3]
-csv_files = os.listdir(CSV_DIR)
+csv_files = os.listdir(CSVDIR)
 
 RESISTANCE_COLOR_VALUES = {
     'BLACK':0,

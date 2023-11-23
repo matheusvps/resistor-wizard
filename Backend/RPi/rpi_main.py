@@ -7,7 +7,7 @@ from globals import *
 from utils import *
 
 # ----------------------------------------------------------- #
-def run_receiver(rec):
+def run_receiver(rec: Receiver):
     rec.start()
 
 def main():
@@ -38,14 +38,14 @@ def main():
     if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
         plataforma.eject()
     
-    while not receiver.is_running.value:
+    while not receiver.is_running.value: # type: ignore
         sleep(0.1)
 
     for i in range(len(receiver.resistances)):
         motor.storages[i] = [receiver.resistances[i], receiver.margins[i]]
 
     no_resistor_accum = 0
-    while receiver.is_running.value and no_resistor_accum < 3:
+    while receiver.is_running.value and no_resistor_accum < 3: # type: ignore
         resistor_exists = True       
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             with concurrent.futures.ThreadPoolExecutor() as executor:

@@ -6,16 +6,17 @@
 from globals import *
 from utils import *
 from PIL import ImageDraw
-CSV_DIR = "COLOR_CLASSES"
-tmp_csv = "tmp.csv"
+
+TMPCSV = os.path.join(CSVDIR, "tmp.csv")
+open(TMPCSV, 'w').close()
 # ----------------------------------------------------------- #
-def update_csv(filename, HSV, dir=CSV_DIR):
+def update_csv(filename: str, HSV: list[int], dir: str=CSVDIR):
     file = os.path.join(dir, filename)
-    with open(file) as f_in, open(tmp_csv, 'w') as f_out:
+    with open(file) as f_in, open(TMPCSV, 'w') as f_out:
         for line in f_in:
             f_out.write(line)
 
-    with open(tmp_csv) as f_in, open(file, 'w') as f_out:
+    with open(TMPCSV) as f_in, open(file, 'w') as f_out:
         minHSV = [int(i) for i in f_in.readline().split(',')]
         maxHSV = [int(i) for i in f_in.readline().split(',')]
         for i in range(3):
@@ -35,21 +36,20 @@ def main():
     plataforma = Plataforma()
 
     # Loads Recognition models
-    cropper = YOLO("../LATEST/cropper.pt")
-    color_bands = YOLO("../LATEST/segmenter.pt")
+    cropper = YOLO("LATEST/cropper.pt")
+    color_bands = YOLO("LATEST/segmenter.pt")
 
     motor.Sleep()
     camera.start()
     if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
         plataforma.eject()
 
-    while True:        
-        #start = time()
-        # Check for user input to adjust exposure and focus
-        
+    no_resistor_accum = 0
+    while no_resistor_accum < 3:
+        resistor_exists = True       
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             dispenser.drop()  # Drops ONE resistor onto the platform
-        sleep(0.3)  # Waits for the resistor to fall onto the platform
+        sleep(0.1)  # Waits for the resistor to fall onto the platform
         ret, frame = camera.capture()
         ret, frame = camera.capture()
         if not ret:
@@ -71,6 +71,7 @@ def main():
             cropped = cropImage(cv.imread(tmp_photo), cropped_infr[0].boxes.cpu().data[0])
         else:
             cropped = cv.imread(tmp_photo)
+            resistor_exists = False
         Image.fromarray(cv.cvtColor(cropped, cv.COLOR_BGR2RGB)).save(tmp_crop)
 
         # Runs color bands segmentation model on cropped inference
@@ -89,14 +90,14 @@ def main():
             
             labeled = Image.open(tmp_crop)
             for i in range(len(ordered)):
-                ImageDraw.Draw(labeled).text((ordered[i].bbox[0], ordered[i].bbox[1]), i, fill=(255,0,0))
+                ImageDraw.Draw(labeled).text((ordered[i].bbox[0], ordered[i].bbox[1]), str(i), fill=(255,0,0))
             labeled.save(os.path.join(tmp_dir, "labeled.png"))
-            print(f"\n\n\LABELED SAVED, PLEASE run 'SCP' FROM \n\tHOST MACHINE TO GET THE UPDATED \n\tIMAGE.\n\n")
+            print(f"\n\nLABELED SAVED, PLEASE run 'SCP' FROM \n\tHOST MACHINE TO GET THE UPDATED \n\tIMAGE.\n\n")
 
             for i in range(len(ordered)):
                 print(f"BBOX: {[int(j) for j in ordered[i].bbox[:4]]} \t Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)}")
                 which_csv = input("Which COLOR class does this color band belong to? ")
-                while not os.path.isfile(os.path.join(CSV_DIR, which_csv)):
+                while not os.path.isfile(os.path.join(CSVDIR, which_csv)):
                     print("Invalid path of file...")
                     which_csv = input("Which COLOR class does this color band belong to? ")
 
@@ -105,12 +106,14 @@ def main():
         except Exception as e:
             print(e)
 
+        # Handles stopping condition when no resistors are left based on image recognition
+        if not resistor_exists:
+            no_resistor_accum += 1
+        else:
+            no_resistor_accum = 0
+
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             plataforma.eject()
-
-        # This needs to be the LAST line on the loop
-        # if time() - start < (1/MAX_IPS):  # If execution rate is faster than MAX_IPS, wait so as to not overload the processor
-        #     sleep((1/MAX_IPS) - time())
 
 
 
@@ -118,7 +121,6 @@ def main():
     camera.__del__()
     dispenser.__del__()
     GPIO.cleanup()
-    receiver_process.terminate()
 
 
 if __name__=="__main__":
