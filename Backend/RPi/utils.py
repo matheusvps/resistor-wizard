@@ -69,6 +69,7 @@ def cvtBGR2HSV(bgr, paint=False):
     Cmin = min(Rp, Gp, Bp)
     delta = Cmax - Cmin
     #
+    H = 0
     if delta == 0:
         H = 0
     elif Cmax == Rp:
@@ -185,7 +186,7 @@ def retrieve_color(hsv, files=csv_files):
         sc = in_range(hsv, file)
         if sc > maxScore:
             maxScore = sc
-            bestFit = sc
+            bestFit = file
     return "".join(bestFit.split('.')[:-1])
 
 
@@ -329,7 +330,7 @@ class Dispenser:
             self.power_state = state
             GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state))
     # Function that vibrates the servos so as to makes the resistors fall
-    def vibrate():
+    def vibrate(self):
         pass
     # Sequence to drop a single resistor
     def drop(self):
