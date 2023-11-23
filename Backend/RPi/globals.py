@@ -1,7 +1,6 @@
 # ----------------------  IMPORTS  -------------------------- #
 from ultralytics import YOLO
 from PIL import Image
-import csv
 import numpy as np
 import cv2 as cv
 from time import time, sleep
@@ -12,7 +11,7 @@ import ctypes
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS, cross_origin
 
-# import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 # ----------------------------------------------------------- #
 
