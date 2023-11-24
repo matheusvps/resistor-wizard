@@ -26,8 +26,11 @@ def main():
 
     receiver = Receiver(port=PORT, ip=IP, is_running=is_running, array_size=array_size, resistances=resistances, margins=margins)
 
-    receiver_process = Process(target=run_receiver, args=(receiver,))
-    receiver_process.start()
+    if len(sys.argv) == 1 or '--no-server' not in sys.argv:
+        receiver_process = Process(target=run_receiver, args=(receiver,))
+        receiver_process.start()
+    else:
+        receiver.is_running.value = True
     
     # Loads Recognition models
     cropper = YOLO("LATEST/cropper.pt")
@@ -35,8 +38,9 @@ def main():
 
     motor.Sleep()
     camera.start()
-    if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
+    if len(sys.argv) == 1 or '--no-renew' not in sys.argv:
         plataforma.eject()
+    
     
     while not receiver.is_running.value: # type: ignore
         sleep(0.1)
@@ -114,6 +118,7 @@ def main():
         # Handles stopping condition when no resistors are left based on image recognition
         if not resistor_exists:
             no_resistor_accum += 1
+            print(f"\n\tCouldn't find a resistor in the image, at a total of {no_resistor_accum} empty images\n")
         else:
             no_resistor_accum = 0
 
@@ -125,7 +130,8 @@ def main():
     camera.__del__()
     dispenser.__del__()
     GPIO.cleanup()
-    receiver_process.terminate()
+    if len(sys.argv) == 1 or '--no-server' not in sys.argv:
+        receiver_process.terminate()
 
 
 if __name__=="__main__":

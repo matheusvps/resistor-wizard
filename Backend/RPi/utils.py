@@ -1,6 +1,5 @@
 # ----------------------------------------------------------- #
-from numpy import ndarray
-from RPi.globals import *
+from globals import *
 
 # ----------------------------------------------------------- #
 # Crops a numpy array image using a bounding box
@@ -370,6 +369,9 @@ class Camera:
         self.primed = False
         # Sets camera's capture properties
         self.dev = cv.VideoCapture(self.index)
+        while not self.dev.isOpened():
+            self.index += 1
+            self.dev = cv.VideoCapture(self.index)
         self.dev.set(cv.CAP_PROP_BUFFERSIZE, 1)
         self.dev.set(cv.CAP_PROP_AUTO_EXPOSURE, 1)
         self.dev.set(cv.CAP_PROP_EXPOSURE, self.exposure)
@@ -427,7 +429,7 @@ class Plataforma:
 
 
 class Receiver:
-    def __init__(self, port: int, ip: str, is_running: SynchronizedBase[Any], array_size: int, resistances, margins):
+    def __init__(self, port: int, ip: str, is_running: SynchronizedBase, array_size: int, resistances, margins):
         self.port = port
         self.ip = ip
         self.is_running = is_running

@@ -13,8 +13,13 @@ from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS, cross_origin
 from multiprocessing.sharedctypes import SynchronizedBase
 from typing import Any
+from gpio_conf import *
+GPIO = gpio()
 
-import RPi.GPIO as GPIO
+SYSTEM = platform.system()
+if SYSTEM != 'Windows':
+    GPIO.enabled = True
+    
 
 # ----------------------------------------------------------- #
 
@@ -23,6 +28,8 @@ CROP_AMOUNT = 3
 SCALE_BBOX = 0.5
 
 tmp_dir = os.path.join(os.getcwd(),"tmp")
+if not os.path.isdir(tmp_dir):
+    os.mkdir(tmp_dir)
 tmp_photo = os.path.join(tmp_dir, "photo.png")
 tmp_crop = os.path.join(tmp_dir, "crop.png")
 tmp_mask = os.path.join(tmp_dir, "mask.png")
