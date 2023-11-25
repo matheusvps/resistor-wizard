@@ -55,8 +55,8 @@ RESISTANCE_COLOR_VALUES = {
 
 # -----------------------  GERAL  --------------------------- #
 CAMERA_INDEX = -1
-CAMERA_FOCUS = 0
-CAMERA_EXPOSURE = 1023
+CAMERA_FOCUS = 2
+CAMERA_EXPOSURE = 1000
 MAX_IPS = 10 # Maximum number of iterations per second
 
 # ------------------ PINOS RASPBERRY Pi --------------------- #

@@ -10,7 +10,7 @@ from PIL import ImageDraw
 TMPCSV = os.path.join(CSVDIR, "tmp.csv")
 open(TMPCSV, 'w').close()
 # ----------------------------------------------------------- #
-def update_csv(filename: str, HSV: list[int], dir: str=CSVDIR):
+def update_csv(filename: str, HSV, dir: str=CSVDIR):
     file = os.path.join(dir, filename)
     with open(file) as f_in, open(TMPCSV, 'w') as f_out:
         for line in f_in:
@@ -37,7 +37,7 @@ def main():
 
     # Loads Recognition models
     cropper = YOLO("LATEST/cropper.pt")
-    color_bands = YOLO("LATEST/segmenter.pt")
+    color_bands = YOLO("LATEST/color_band_segment_grayscale.pt")
 
     motor.Sleep()
     camera.start()
@@ -49,7 +49,7 @@ def main():
         resistor_exists = True       
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             dispenser.drop()  # Drops ONE resistor onto the platform
-        sleep(0.1)  # Waits for the resistor to fall onto the platform
+        sleep(0.2)  # Waits for the resistor to fall onto the platform
         ret, frame = camera.capture()
         ret, frame = camera.capture()
         if not ret:
@@ -80,31 +80,31 @@ def main():
         else:
             colorbands_infr = color_bands(tmp_photo, conf=0.6, iou=0.3)
 
-        try:
-            # Gets masks objects from the inference
-            masks, _ = timer(get_segmentation_masks, tmp_crop, colorbands_infr, printout=True)
-            # Sorts the masks by distance (it doesn't have a way to 
-            #    know in which direction to start, so by default it 
-            #    uses the leftmost (0,0) point as a beginning.
-            ordered, _ = timer(order_masks, masks, colorbands_infr, printout=True)
-            
-            labeled = Image.open(tmp_crop)
-            for i in range(len(ordered)):
-                ImageDraw.Draw(labeled).text((ordered[i].bbox[0], ordered[i].bbox[1]), str(i), fill=(255,0,0))
-            labeled.save(os.path.join(tmp_dir, "labeled.png"))
-            print(f"\n\nLABELED SAVED, PLEASE run 'SCP' FROM \n\tHOST MACHINE TO GET THE UPDATED \n\tIMAGE.\n\n")
+        #try:
+        # Gets masks objects from the inference
+        masks, _ = timer(get_segmentation_masks, tmp_crop, colorbands_infr, printout=True)
+        # Sorts the masks by distance (it doesn't have a way to 
+        #    know in which direction to start, so by default it 
+        #    uses the leftmost (0,0) point as a beginning.
+        ordered, _ = timer(order_masks, masks, colorbands_infr, printout=True)
+        
+        labeled = Image.open(tmp_crop)
+        for i in range(len(ordered)):
+            ImageDraw.Draw(labeled).text((ordered[i].bbox[0], ordered[i].bbox[1]), str(i), fill=(255,0,0))
+        labeled.save(os.path.join(tmp_dir, "labeled.png"))
+        print(f"\n\nLABELED SAVED, PLEASE run 'SCP' FROM \n\tHOST MACHINE TO GET THE UPDATED \n\tIMAGE.\n\n")
 
-            for i in range(len(ordered)):
-                print(f"BBOX: {[int(j) for j in ordered[i].bbox[:4]]} \t Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)}")
+        for i in range(len(ordered)):
+            print(f"BBOX: {[int(j) for j in ordered[i].bbox[:4]]} \t Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)}")
+            which_csv = input("Which COLOR class does this color band belong to? ")
+            while not os.path.isfile(os.path.join(CSVDIR, which_csv)):
+                print("Invalid path of file...")
                 which_csv = input("Which COLOR class does this color band belong to? ")
-                while not os.path.isfile(os.path.join(CSVDIR, which_csv)):
-                    print("Invalid path of file...")
-                    which_csv = input("Which COLOR class does this color band belong to? ")
 
-                update_csv(which_csv, cvtBGR2HSV(ordered[i].avgColor))
+            update_csv(which_csv, cvtBGR2HSV(ordered[i].avgColor))
 
-        except Exception as e:
-            print(e)
+        # except Exception as e:
+        #     print(e)
 
         # Handles stopping condition when no resistors are left based on image recognition
         if not resistor_exists:

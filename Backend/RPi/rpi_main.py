@@ -34,7 +34,7 @@ def main():
     
     # Loads Recognition models
     cropper = YOLO("LATEST/cropper.pt")
-    color_bands = YOLO("LATEST/color_band_segment.pt")
+    color_bands = YOLO("LATEST/color_band_segment_grayscale.pt")
 
     motor.Sleep()
     camera.start()
@@ -58,7 +58,7 @@ def main():
                 # Wait for both to complete
                 concurrent.futures.wait([func1, func2])
             
-        sleep(0.1)  # Waits for the resistor to fall onto the platform
+        sleep(0.2)  # Waits for the resistor to fall onto the platform
         ret, frame = camera.capture()
         ret, frame = camera.capture()
         if not ret:

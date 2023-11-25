@@ -8,7 +8,7 @@ def cropImage(image, box):
 
 
 # Calculates the centroid of a rectangle
-def get_centroid(rect: list[float])-> tuple[float, float]:
+def get_centroid(rect):
     cX = (rect[2] + rect[0])/2
     cY = (rect[3] + rect[1])/2
     return (cX, cY)
@@ -19,7 +19,7 @@ class Mask:
     def __init__(self, img, bbox = [], contour=[]):
         self.image = img
         self.mask = np.zeros_like(img, dtype=np.uint8)  # creates mask of same size as original image
-        self.avgColor: tuple[int, int, int] = (-1, -1, -1)
+        self.avgColor = (-1, -1, -1)
         self.bbox = bbox
         self.contour = contour
         self.index = -1  # This color's position relative to others
@@ -43,15 +43,15 @@ class Mask:
         self.avgColor = summ/nump
         
     # Checks if a point is inside the mask's bounding box
-    def contains(self, point: tuple[float, float]):
-        if point < self.bbox[0:2].tolist() or point > self.bbox[2:4].tolist():
+    def contains(self, point):
+        if list(point) < self.bbox[0:2].tolist() or list(point) > self.bbox[2:4].tolist():
             return False
         else:
             return True
 
 
 # Calculates the linear regression of the points in a 2D dataset: Y in function of X (Y= a*X + b)
-def lin_reg(data: list[tuple[float, float]])-> list[float]:
+def lin_reg(data):
     X = np.array([i[0] for i in data])
     Y = np.array([i[1] for i in data])
     a = ((len(data) * np.sum(X*Y)) - (np.sum(X) * np.sum(Y)))/(len(data) * np.sum(X*X) - (np.sum(X))**2)
@@ -60,7 +60,7 @@ def lin_reg(data: list[tuple[float, float]])-> list[float]:
 
 
 # Converts BGR color to HSV (0-360, 0-255, 0-255)
-def cvtBGR2HSV(bgr: tuple[int, int, int], paint: bool=False):
+def cvtBGR2HSV(bgr, paint: bool=False):
     B,G,R = bgr
     Rp = R/255 
     Gp = G/255 
@@ -108,7 +108,7 @@ def get_segmentation_masks(img: str, inference, data: int=255):
 
 
 # Finds the mask that contains a given point – considers a point can belong to a single mask
-def retrieve_point_in_mask(masks: list[Mask], point: tuple[float, float]):
+def retrieve_point_in_mask(masks, point):
     for mask in masks:
         if mask.contains(point):
             return mask
@@ -116,7 +116,7 @@ def retrieve_point_in_mask(masks: list[Mask], point: tuple[float, float]):
 
 # Calculates the possible orders of the color bands – assumes the bands are approximately
 #     linear, which is reasonable given that resistors follow this standard
-def order_masks(masks: list[Mask], inference):
+def order_masks(masks, inference):
     boxes = inference[0].boxes.cpu().data
     vertex = [v[:4] for v in boxes]
     centroids = [get_centroid(v) for v in vertex]
@@ -132,12 +132,12 @@ def order_masks(masks: list[Mask], inference):
         proj = lv * np.dot(u,lv) / (lv_norm**2)  # Projects the centroid onto the line
         vects[retrieve_point_in_mask(masks, center)] = np.sqrt(np.sum(proj**2))  # Calculates each centroid's distance to origin and associates it to its respective mask
     # Sorts masks by distance
-    sorted_masks: dict[Mask, int] = dict(sorted(vects.items(), key=lambda item: item[1]))
+    sorted_masks = dict(sorted(vects.items(), key=lambda item: item[1]))
 
     #if len(sorted_masks) != len(masks):
     #  ~ TERMINAR CODIGO DE ROTAÇÃO DAS IMAGENS CASO ESTEJA VERTICAL... ~
 
-    ordered: list[Mask] = list(sorted_masks)
+    ordered = list(sorted_masks)
     for m in ordered:
         m.index = ordered.index(m)
     return ordered
@@ -165,7 +165,7 @@ def timer(func, *args, printout: bool=False):
 
 
 # Compares an HSV value to those stored in a CSV file (min, max per line structure)
-def in_range(HSV: list[int], file: str):
+def in_range(HSV, file: str):
     score = 0
     minHSV = []
     maxHSV = []
@@ -179,7 +179,7 @@ def in_range(HSV: list[int], file: str):
 
 
 # Attempts to find which class an HSV color belongs to
-def retrieve_color(hsv: list[int], files: list[str]=csv_files):
+def retrieve_color(hsv, files: list=csv_files):
     maxScore = -1
     bestFit = ""
     for file in files:
@@ -191,7 +191,7 @@ def retrieve_color(hsv: list[int], files: list[str]=csv_files):
 
 
 # Gets resistance value of resistor from resistance-color table
-def get_resistance(resistor: dict[int, str]):
+def get_resistance(resistor: dict):
     if len(resistor) in [3,4]:
         return True, (RESISTANCE_COLOR_VALUES[resistor[0]]*10 + RESISTANCE_COLOR_VALUES[resistor[1]])*(10**RESISTANCE_COLOR_VALUES[resistor[2]])
     elif len(resistor) == 5:
@@ -429,7 +429,7 @@ class Plataforma:
 
 
 class Receiver:
-    def __init__(self, port: int, ip: str, is_running: SynchronizedBase, array_size: int, resistances, margins):
+    def __init__(self, port: int, ip: str, is_running, array_size: int, resistances, margins):
         self.port = port
         self.ip = ip
         self.is_running = is_running
@@ -460,7 +460,7 @@ class Receiver:
             self.is_running.value = False # type: ignore
             return 'OK'
 
-    def update_array(self, target: list[int], values: list[int]):
+    def update_array(self, target, values):
         for i in range(min(self.arrSize, len(values))):
             try:
                 target[i] = int(values[i])
