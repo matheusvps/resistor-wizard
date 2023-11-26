@@ -7,7 +7,7 @@ from globals import *
 from utils import *
 from PIL import ImageDraw
 
-TMPCSV = os.path.join(CSVDIR, "tmp.csv")
+TMPCSV = "tmp.csv"
 open(TMPCSV, 'w').close()
 # ----------------------------------------------------------- #
 def update_csv(filename: str, HSV, dir: str=CSVDIR):
@@ -73,49 +73,44 @@ def main():
         # Crops and saves original file to a temporary location
         if len(cropped_infr[0].boxes.data):
             cropped = cropImage(cv.imread(tmp_photo), cropped_infr[0].boxes.cpu().data[0])
-        else:
-            cropped = cv.imread(tmp_photo)
-            resistor_exists = False
-        Image.fromarray(cv.cvtColor(cropped, cv.COLOR_BGR2RGB)).save(tmp_crop)
-
-        # Runs color bands segmentation model on cropped inference
-        if len(cropped_infr[0].boxes.data):
+            Image.fromarray(cv.cvtColor(cropped, cv.COLOR_BGR2RGB)).save(tmp_crop)
+            # Runs color bands segmentation model on cropped inference
             colorbands_infr = color_bands(tmp_crop, conf=0.6, iou=0.3)
-        else:
-            colorbands_infr = color_bands(tmp_photo, conf=0.6, iou=0.3)
 
-        try:
-            # Gets masks objects from the inference
-            masks, _ = timer(get_segmentation_masks, tmp_crop, colorbands_infr, printout=True)
-            # Sorts the masks by distance (it doesn't have a way to 
-            #    know in which direction to start, so by default it 
-            #    uses the leftmost (0,0) point as a beginning.
-            ordered, _ = timer(order_masks, masks, colorbands_infr, printout=True)
-            
-            labeled = Image.open(tmp_crop)
-            for i in range(len(ordered)):
-                ImageDraw.Draw(labeled).text((ordered[i].bbox[0], ordered[i].bbox[1]), str(i), fill=(255,0,0))
-            labeled.save(os.path.join(tmp_dir, "labeled.png"))
-            print(f"\n\nLABELED SAVED, PLEASE run 'SCP' FROM \n\tHOST MACHINE TO GET THE UPDATED \n\tIMAGE.\n\n")
+            try:
+                # Gets masks objects from the inference
+                masks, _ = timer(get_segmentation_masks, tmp_crop, colorbands_infr, printout=True)
+                # Sorts the masks by distance (it doesn't have a way to 
+                #    know in which direction to start, so by default it 
+                #    uses the leftmost (0,0) point as a beginning.
+                ordered, _ = timer(order_masks, masks, colorbands_infr, printout=True)
 
-            for i in range(len(ordered)):
-                print(f"BBOX: {[int(j) for j in ordered[i].bbox[:4]]} \t Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)}")
-                which_csv = input("Which COLOR class does this color band belong to? ").upper() + ".csv"
-                while not os.path.isfile(os.path.join(CSVDIR, which_csv)):
-                    print("Invalid path of file...")
-                    which_csv = input("Which COLOR class does this color band belong to? ").upper() + ".csv"
+                labeled = Image.open(tmp_crop)
+                for i in range(len(ordered)):
+                    ImageDraw.Draw(labeled).text((ordered[i].bbox[0], ordered[i].bbox[1]), str(i), fill=(255,0,0))
+                labeled.save(os.path.join(tmp_dir, "labeled.png"))
+                print(f"\n\nLABELED SAVED, PLEASE run 'SCP' FROM \n\tHOST MACHINE TO GET THE UPDATED \n\tIMAGE.\n\n")
 
-                update_csv(which_csv, cvtBGR2HSV(ordered[i].avgColor))
+                for i in range(len(ordered)):
+                    print(f"Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)},  {cvtBGR2HSV(ordered[i].avgColor)} \t Predicted: {retrieve_color(cvtBGR2HSV(ordered[i].avgColor)).upper()}")
+                    # which_csv = input("Which COLOR class does this color band belong to? ").upper() + ".csv"
+                    # while not os.path.isfile(os.path.join(CSVDIR, which_csv)):
+                    #     print("Invalid path of file...")
+                    #     which_csv = input("Which COLOR class does this color band belong to? ").upper() + ".csv"
 
-        except AttributeError:
-            print("Couldn't detect a resistor...")
+                    # update_csv(which_csv, cvtBGR2HSV(ordered[i].avgColor))
+                input()
 
-        # Handles stopping condition when no resistors are left based on image recognition
-        if not resistor_exists:
-            no_resistor_accum += 1
-        else:
+            except AttributeError:
+                resistor_exists = False
+                print("Couldn't detect color bands...")
+
+        # Handles stopping condition when no resistors are seen based on image recognition
+        if resistor_exists:
             no_resistor_accum = 0
-
+        else:
+            no_resistor_accum += 1
+                
         if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
             plataforma.eject()
 

@@ -26,21 +26,21 @@ class Mask:
         self.color = ""  # A string identifier of the color the mask represents
     # Calculates average color on the color band associated with the mask
     def sample_avg_color(self):
-        center = [int(j) for j in get_centroid([float(i) for i in self.bbox[:4]])]  # Center of Bounding box
-        xLength = self.bbox[2] - self.bbox[0]  # Length of edges on X and Y
-        yLength = self.bbox[3] - self.bbox[1]
-        sX = int(center[0] - ((SCALE_BBOX*xLength)/2))  # Top left corner of box to consider for averaging
-        sY = int(center[1] - ((SCALE_BBOX*yLength)/2))
-        eX = int(sX + (SCALE_BBOX*xLength))
-        eY = int(sY + (SCALE_BBOX*yLength))
+        width = int(self.bbox[2] - self.bbox[0])  # Length of edges on X and Y
+        height = int(self.bbox[3] - self.bbox[1])
+        sX,sY = [int(i) for i in self.bbox[:2]]
+        fact = (1 - CENTER_BOX)/2
         summ = np.array([0,0,0])
         nump = 0
-        for i in range(sX, eX+1):
-            for j in range(sY, eY+1):
-                if cv.pointPolygonTest(self.contour, (i, j), measureDist=False) == 1:
+        for i in range(sX+CROP_AMOUNT, sX+width-CROP_AMOUNT):
+            for j in range(sY+CROP_AMOUNT, sY+height-CROP_AMOUNT):
+                if (j < height*fact or j > height*(1 - fact)) and cv.pointPolygonTest(self.contour, (i, j), measureDist=False) == 1:
                     summ += self.image[j][i]
                     nump += 1
-        self.avgColor = summ/nump
+        if nump > 0:
+            self.avgColor = summ/nump
+        else:
+            self.avgColor = summ
         
     # Checks if a point is inside the mask's bounding box
     def contains(self, point):
@@ -96,7 +96,7 @@ def cvtBGR2HSV(bgr, paint: bool=False):
 
 
 # Retrieves the pixels contained in the contours given by the model prediction
-def get_segmentation_masks(img: str, inference, data: int=255):
+def get_segmentation_masks(img: str, inference):
     image = cv.imread(img)
     masks = [Mask(image) for _ in range(len(inference[0].masks.xy))]
     for i in range(len(inference[0].masks.xy)):
@@ -169,26 +169,86 @@ def in_range(HSV, file: str):
     score = 0
     minHSV = []
     maxHSV = []
-    with open(file) as f:
-        minHSV = [int(i) for i in f.readline().split(',')]
-        maxHSV = [int(i) for i in f.readline().split(',')]
-    for i in range(3):
-        if minHSV[i] <= HSV[i] <= maxHSV[i]:
-            score += HSV_weight[i]
+    try:
+        with open(file) as f:
+            minHSV = [int(i) for i in f.readline().split(',')]
+            maxHSV = [int(i) for i in f.readline().split(',')]
+        for i in range(3):
+            if minHSV[i] <= HSV[i] <= maxHSV[i]:
+                score += HSV_weight[i]
+    except ValueError:
+        score = 0
     return score
 
 
 # Attempts to find which class an HSV color belongs to
 def retrieve_color(hsv, files: list=csv_files):
-    maxScore = -1
-    bestFit = ""
-    for file in files:
-        sc = in_range(hsv, file)
-        if sc > maxScore:
-            maxScore = sc
-            bestFit = file
-    return "".join(bestFit.split('.')[:-1])
-
+    # maxScore = -1
+    # bestFit = ""
+    # H,S,V = hsv
+    # if S < 38:
+    #     if V < 38:
+    #         return "BLACK"
+    #     elif V < 204:
+    #         return "GREY"
+    #     else:
+    #         return "WHITE"
+    # else:
+    #     for file in files:
+    #         sc = in_range(hsv, file)
+    #         if sc > maxScore:
+    #             maxScore = sc
+    #             bestFit = file
+    #     return ("".join(bestFit.split('.')[:-1])).split('/')[-1]
+    H,S,V = hsv
+    if S < 50:
+        if V < 38:
+            return "BLACK"
+        elif V < 170:
+            return "GREY"
+        else:
+            return "WHITE"
+    else:
+        if V < 26:
+            return "BLACK"
+        elif H < 15 or H >= 330:
+            if V < 51:
+                return "BLACK"
+            elif V < 127 and S < 154:
+                return "BROWN"
+            elif S < 115:
+                return "VIOLET"
+            return "RED"
+        elif 15 <= H < 40:
+            if V < 120:
+                return "BROWN"
+            return "ORANGE"
+        elif 40 <= H < 90:
+            if V <= 90 and S < 150:
+                return "BROWN"
+            return "YELLOW"
+        elif 90 <= H < 150:
+            if S < 166:
+                if V < 65:
+                    return "BLACK"
+                elif V <= 100:
+                    return "BROWN"
+            return "GREEN"
+        elif 150 <= H < 245:
+            if S < 217 and H > 220:
+                return "VIOLET"
+            elif V < 63:
+                if S < 170:
+                    return "GREY"
+                else:
+                    return "BLACK"
+            return "BLUE"
+        elif 245 <= H < 330:
+            if V < 51:
+                return "BLACK"
+            return "VIOLET"
+    return "BROWN"
+        
 
 # Gets resistance value of resistor from resistance-color table
 def get_resistance(resistor: dict):

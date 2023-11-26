@@ -23,9 +23,8 @@ if SYSTEM != 'Windows':
 
 # ----------------------------------------------------------- #
 
-
-CROP_AMOUNT = 3
-SCALE_BBOX = 0.5
+CROP_AMOUNT = 0
+CENTER_BOX = 1/2
 
 tmp_dir = os.path.join(os.getcwd(),"tmp")
 if not os.path.isdir(tmp_dir):
@@ -36,7 +35,10 @@ tmp_mask = os.path.join(tmp_dir, "mask.png")
 
 CSVDIR = "COLOR_CLASSES"
 HSV_weight = [4, 2, 3]
-csv_files = os.listdir(CSVDIR)
+csv_files = []
+
+for file in os.listdir(CSVDIR):
+    csv_files.append(os.path.join(CSVDIR, file))
 
 RESISTANCE_COLOR_VALUES = {
     'BLACK':0,
