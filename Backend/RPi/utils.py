@@ -242,6 +242,8 @@ def retrieve_color(hsv, files: list=csv_files):
                     return "GREY"
                 else:
                     return "BLACK"
+            elif S < 80 and V > 190:
+                return "WHITE"
             return "BLUE"
         elif 245 <= H < 330:
             if V < 51:
