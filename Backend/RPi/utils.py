@@ -199,13 +199,15 @@ def get_resistance(resistor: dict):
     else:
         return False, -1
 
+
 class Motor:
-    def __init__(self, stepPin: int=Passo_SM, dirPin: int=Direcao_SM, sleepPin: int=Sleep_SM, stepsPerRev: int=stepsPerRevolution, minDt: float=minDeltaT, powerSaving: bool=True, logging: bool=False):
+    def __init__(self, stepPin: int=Passo_SM, dirPin: int=Direcao_SM, sleepPin: int=Sleep_SM, stepsPerRev: int=stepsPerRevolution, minDt: float=minDeltaT, hallFXPIN: int=Hall_effect, powerSaving: bool=True, logging: bool=False):
         self.stepPin = stepPin
         self.dirPin = dirPin
         self.sleepPin = sleepPin
         self.stepsPerRev = stepsPerRev
         self.minDt = minDt
+        self.hall_pin = hallFXPIN
         self.position = 0  # Position measured in steps (0 is at startup, before homing)
         self.direction = 1 # 1 for HIGH on dirPin, 0 for LOW
         self.speed = 50  # Steps per sec
@@ -224,6 +226,8 @@ class Motor:
             3:[-1,-1,100], 
             4:[-1,-1,133], 
         }
+        #
+        self.Sleep()
     # Puts Motor driver on SLEEP mode
     def Sleep(self, state: bool=True):
         if self.power_save == False:
@@ -233,6 +237,14 @@ class Motor:
             GPIO.output(self.sleepPin, GPIO.LOW)
         else:
             GPIO.output(self.sleepPin, GPIO.HIGH)
+    # Homes Motor position
+    def home(self):
+        self.Sleep(False)
+        while GPIO.input(self.hall_pin) == GPIO.HIGH:  # While Hall doesn't detect magnet, step motor
+            self.step()
+            sleep(0.01)
+        self.position = 100  # Default home positon (arbitrary)
+        self.Sleep(True)
     # Updates Motors stats
     def update(self, safe_mode: bool=True):
         if safe_mode and self.speed > self.max_speed:
@@ -374,10 +386,12 @@ class Camera:
             self.dev = cv.VideoCapture(self.index)
         self.dev.set(cv.CAP_PROP_BUFFERSIZE, 1)
         self.dev.set(cv.CAP_PROP_AUTO_EXPOSURE, 1)
+        self.dev.set(cv.CAP_PROP_AUTOFOCUS, 0)
         self.dev.set(cv.CAP_PROP_EXPOSURE, self.exposure)
         self.dev.set(cv.CAP_PROP_FOCUS, self.focus)
         self.dev.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
         self.dev.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
+        
     #  Starts camera and adjusts exposure 
     def start(self):
         if self.primed:

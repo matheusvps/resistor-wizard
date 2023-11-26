@@ -178,4 +178,4 @@ Backend/RPi/tst.py
 Backend/RPi/photo.png
 *.bat
 .vscode/settings.json
-Backend/tmp.png
+tmp*

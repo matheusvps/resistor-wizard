@@ -55,8 +55,8 @@ RESISTANCE_COLOR_VALUES = {
 
 # -----------------------  GERAL  --------------------------- #
 CAMERA_INDEX = -1
-CAMERA_FOCUS = 2
-CAMERA_EXPOSURE = 1000
+CAMERA_FOCUS = 300
+CAMERA_EXPOSURE = 450
 MAX_IPS = 10 # Maximum number of iterations per second
 
 # ------------------ PINOS RASPBERRY Pi --------------------- #
@@ -71,7 +71,7 @@ Passo_SM = 3
 Direcao_SM = 5
 Sleep_SM = 12
 # Sensor de efeito hall
-Hall_effect = -1
+Hall_effect = 7
 # Lista de Pinos usados
 Pinos = [
          ToggleLED, 
@@ -88,6 +88,7 @@ Pinos = [
 GPIO.setmode(GPIO.BOARD)
 for pino in Pinos:
     GPIO.setup(pino, GPIO.OUT)
+GPIO.setup(Hall_effect, GPIO.IN)
 
 minDeltaT = 2e-6 # 2u sec
 stepsPerRevolution = 200

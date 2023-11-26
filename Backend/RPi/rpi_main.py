@@ -36,7 +36,7 @@ def main():
     cropper = YOLO("LATEST/cropper.pt")
     color_bands = YOLO("LATEST/color_band_segment_grayscale.pt")
 
-    motor.Sleep()
+    motor.home()
     camera.start()
     if len(sys.argv) == 1 or '--no-renew' not in sys.argv:
         plataforma.eject()
@@ -58,7 +58,7 @@ def main():
                 # Wait for both to complete
                 concurrent.futures.wait([func1, func2])
             
-        sleep(0.2)  # Waits for the resistor to fall onto the platform
+        sleep(0.3)  # Waits for the resistor to fall onto the platform
         ret, frame = camera.capture()
         ret, frame = camera.capture()
         if not ret:
