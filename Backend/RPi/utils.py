@@ -7,6 +7,40 @@ def cropImage(image, box):
     return image[int(box[1]):int(box[3]), int(box[0]):int(box[2])]
 
 
+# Performs white balancing on the image
+def white_balance(image):
+    # Calculate the average color values for each channel
+    avg_b = np.mean(image[:, :, 0])
+    avg_g = np.mean(image[:, :, 1])
+    avg_r = np.mean(image[:, :, 2])
+
+    # Calculate the grey world correction factors
+    grey_value = (avg_b + avg_g + avg_r) / 3.0
+    scale_b = grey_value / avg_b
+    scale_g = grey_value / avg_g
+    scale_r = grey_value / avg_r
+
+    # Apply the correction factors to each channel
+    balanced_image = image.copy()
+    balanced_image[:, :, 0] = np.clip(image[:, :, 0] * scale_b, 0, 255).astype(np.uint8)
+    balanced_image[:, :, 1] = np.clip(image[:, :, 1] * scale_g, 0, 255).astype(np.uint8)
+    balanced_image[:, :, 2] = np.clip(image[:, :, 2] * scale_r, 0, 255).astype(np.uint8)
+
+    return balanced_image
+
+
+# Scales all values in an image
+def scale_colors(image, scale):
+    scale_b, scale_g, scale_r = scale
+    # Apply the correction factors to each channel
+    scaled_image = image.copy()
+    scaled_image[:, :, 0] = np.clip(image[:, :, 0] * scale_b, 0, 255).astype(np.uint8)
+    scaled_image[:, :, 1] = np.clip(image[:, :, 1] * scale_g, 0, 255).astype(np.uint8)
+    scaled_image[:, :, 2] = np.clip(image[:, :, 2] * scale_r, 0, 255).astype(np.uint8)
+
+    return scaled_image
+
+
 # Calculates the centroid of a rectangle
 def get_centroid(rect):
     cX = (rect[2] + rect[0])/2
@@ -138,6 +172,15 @@ def order_masks(masks, inference):
     #  ~ TERMINAR CODIGO DE ROTAÇÃO DAS IMAGENS CASO ESTEJA VERTICAL... ~
 
     ordered = list(sorted_masks)
+    distances = [-1]*5
+    for i in range(len(centroids)-1):
+        c1 = np.array(centroids[i])
+        c2 = np.array(centroids[i+1])
+        distances[i] = np.linalg.norm(c2-c1)
+    print(distances)
+    if distances.index(max(distances)) == 0:
+        ordered.reverse()
+
     for m in ordered:
         m.index = ordered.index(m)
     return ordered
@@ -182,75 +225,30 @@ def in_range(HSV, file: str):
 
 
 # Attempts to find which class an HSV color belongs to
-def retrieve_color(hsv, files: list=csv_files):
-    # maxScore = -1
-    # bestFit = ""
-    # H,S,V = hsv
-    # if S < 38:
-    #     if V < 38:
-    #         return "BLACK"
-    #     elif V < 204:
-    #         return "GREY"
-    #     else:
-    #         return "WHITE"
-    # else:
-    #     for file in files:
-    #         sc = in_range(hsv, file)
-    #         if sc > maxScore:
-    #             maxScore = sc
-    #             bestFit = file
-    #     return ("".join(bestFit.split('.')[:-1])).split('/')[-1]
+def retrieve_color(hsv):
     H,S,V = hsv
-    if S < 50:
-        if V < 38:
-            return "BLACK"
-        elif V < 170:
-            return "GREY"
-        else:
-            return "WHITE"
-    else:
-        if V < 26:
-            return "BLACK"
-        elif H < 15 or H >= 330:
-            if V < 51:
-                return "BLACK"
-            elif V < 127 and S < 154:
-                return "BROWN"
-            elif S < 115:
-                return "VIOLET"
-            return "RED"
-        elif 15 <= H < 40:
-            if V < 120:
-                return "BROWN"
-            return "ORANGE"
-        elif 40 <= H < 90:
-            if V <= 90 and S < 150:
-                return "BROWN"
-            return "YELLOW"
-        elif 90 <= H < 150:
-            if S < 166:
-                if V < 65:
-                    return "BLACK"
-                elif V <= 100:
-                    return "BROWN"
-            return "GREEN"
-        elif 150 <= H < 245:
-            if S < 217 and H > 220:
-                return "VIOLET"
-            elif V < 63:
-                if S < 170:
-                    return "GREY"
-                else:
-                    return "BLACK"
-            elif S < 80 and V > 190:
-                return "WHITE"
-            return "BLUE"
-        elif 245 <= H < 330:
-            if V < 51:
-                return "BLACK"
-            return "VIOLET"
+    S /= 2.55
+    V /= 2.55  # Converts to Paints' standard to facilitate comparisons
+    if (V <= 20 and S <= 50) or (V <= 10) or (180 < H <= 250 and V <= 40):
+        return "BLACK"
+    if (50 < H <= 250 and 20 < V <= 67 and S <= 25) or (150 < H <= 240 and 20 < V <= 35 and S <= 35):
+        return "GREY"
+    if (67 < V <= 80 and S <= 20) or (80 < V and S <= 15):
+        return "WHITE"
+    if (H <= 15 or H >= 310) and S > 60 and V > 30:
+        return "RED"
+    if (15 < H <= 40 and S > 30 and V > 50) or (15 < H <= 40 and S > 80 and V > 35) or (H < 15 and S < 50 and V > 50):
+        return "ORANGE"
+    if (40 < H <= 85) and ((H >= 65 and S > 50 and V > 40) or (H < 65 and S > 65 and V > 40)):
+        return "YELLOW"
+    if (85 < H <= 165 and S > 50 and V > 25):
+        return "GREEN"
+    if (165 < H <= 245 and S > 50 and V > 20):
+        return "BLUE"
+    if (245 < H <= 310 and S > 20 and V > 30) or (220 < H <= 245 and 20 < S <= 50 and V > 25):
+        return "VIOLET"
     return "BROWN"
-        
+
 
 # Gets resistance value of resistor from resistance-color table
 def get_resistance(resistor: dict):
@@ -302,9 +300,13 @@ class Motor:
     # Homes Motor position
     def home(self):
         self.Sleep(False)
+        self.setDirection(0)
         while GPIO.input(self.hall_pin) == GPIO.HIGH:  # While Hall doesn't detect magnet, step motor
             self.step()
             sleep(0.01)
+        self.invertDirection()
+        self.step()
+        sleep(1)
         self.position = 100  # Default home positon (arbitrary)
         self.Sleep(True)
     # Updates Motors stats
@@ -363,7 +365,7 @@ class Motor:
     def shake(self):
         self.Sleep(False)
         numSteps = 12 # 21,6deg (change according to need)
-        freq = 100 # Hz
+        freq = 200 # Hz
         period = 1/freq
         for _ in range(numSteps):
             self.step()
@@ -374,6 +376,7 @@ class Motor:
             self.step()
             self.update()
             sleep(period)
+        self.invertDirection()  # Inverts the direction of rotation
         self.Sleep(True)
     # Finds which storage a resistor must go into and moves the motor to it
     def find_slot(self, resistance: int):
@@ -403,23 +406,34 @@ class Dispenser:
             self.power_state = state
             GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state))
     # Function that vibrates the servos so as to makes the resistors fall
-    def vibrate(self):
-        pass
+    def vibrate(self, duration=1): # Duration in seconds
+        startState = self.power_state
+        self.Power()
+        sleep(0.1)
+        self.topBlade.ChangeDutyCycle(10.2)
+        start = time()
+        while time() - start < duration:
+            self.topBlade.ChangeDutyCycle(10.7)
+            sleep(0.05)
+            self.topBlade.ChangeDutyCycle(10.1)
+            sleep(0.05)
+        self.Power(startState)
     # Sequence to drop a single resistor
     def drop(self):
         delay = 0.3
         self.Power()
         sleep(0.05)
-        self.topBlade.ChangeDutyCycle(11.5)
-        self.bottomBlade.ChangeDutyCycle(2)
+        self.topBlade.ChangeDutyCycle(11.5) # Top Closes
+        self.bottomBlade.ChangeDutyCycle(2) # Bottom Closes
         sleep(delay)
-        self.topBlade.ChangeDutyCycle(10)
+        self.topBlade.ChangeDutyCycle(10.2) # Top Opens
+        self.vibrate()
         sleep(delay)
-        self.topBlade.ChangeDutyCycle(11.5)
+        self.topBlade.ChangeDutyCycle(11.5) # Top Closes
         sleep(delay)
-        self.bottomBlade.ChangeDutyCycle(3)
+        self.bottomBlade.ChangeDutyCycle(3) # Bottom Opens
         sleep(delay)
-        self.bottomBlade.ChangeDutyCycle(2)
+        self.bottomBlade.ChangeDutyCycle(2) # Bottom closes
         sleep(delay)
         self.Power(False)
         
@@ -435,17 +449,19 @@ class CustomError(Exception):
 
 
 class Camera:
-    def __init__(self, index: int=CAMERA_INDEX, focus: int=CAMERA_FOCUS, exposure: int=CAMERA_EXPOSURE, toggleLED: int=ToggleLED):
+    def __init__(self, index: int=CAMERA_INDEX, focus: int=CAMERA_FOCUS, exposure: int=CAMERA_EXPOSURE, toggleLED: int=ToggleLED, LEDState: bool = True):
         self.index = index
         self.focus = focus
         self.exposure = exposure
         self.powerLED = toggleLED
+        self.LEDState = LEDState
         self.primed = False
         # Sets camera's capture properties
         self.dev = cv.VideoCapture(self.index)
         while not self.dev.isOpened():
             self.index += 1
             self.dev = cv.VideoCapture(self.index)
+        self.dev.read()
         self.dev.set(cv.CAP_PROP_BUFFERSIZE, 1)
         self.dev.set(cv.CAP_PROP_AUTO_EXPOSURE, 1)
         self.dev.set(cv.CAP_PROP_AUTOFOCUS, 0)
@@ -453,23 +469,29 @@ class Camera:
         self.dev.set(cv.CAP_PROP_FOCUS, self.focus)
         self.dev.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
         self.dev.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
-        
+    # Toggles LED state
+    def Flash(self, state=True):
+        if self.LEDState == True:
+            GPIO.output(self.powerLED, state)
+        else:
+            GPIO.output(self.powerLED, False)
+            
     #  Starts camera and adjusts exposure 
     def start(self):
         if self.primed:
             return
-        GPIO.output(self.powerLED, GPIO.HIGH)
-        for i in range(5):  # Reads 5 images to prime the input
+        self.Flash()
+        for _ in range(5):  # Reads 5 images to prime the input
             _, _ = self.dev.read()
         self.primed = True
-        GPIO.output(self.powerLED, GPIO.LOW)
+        self.Flash(False)
     # Captures image from camera
     def capture(self):
-        GPIO.output(self.powerLED, GPIO.HIGH)
+        self.Flash()
         sleep(0.1)
         img = self.dev.read()
         sleep(0.1)
-        GPIO.output(self.powerLED, GPIO.LOW)
+        self.Flash(False)
         return img
     # Class destroyer
     def __del__(self):
@@ -492,15 +514,17 @@ class Plataforma:
             GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state)) 
     # Ejects the resistor from the platform
     def eject(self):
-        delay = 0.3
         self.Power()
         sleep(0.05)
-        self.control.ChangeDutyCycle(2.3)
-        sleep(delay)
-        self.control.ChangeDutyCycle(7)
-        sleep(delay)
-        self.control.ChangeDutyCycle(2.3)
-        sleep(delay)
+        delay = 0.005
+        for i in range(23, 71):
+            dc = i/10
+            self.control.ChangeDutyCycle(dc)
+            sleep(delay)
+        for i in range(70, 22, -1):
+            dc = i/10
+            self.control.ChangeDutyCycle(dc)
+            sleep(delay)
         self.Power(False)
 
 

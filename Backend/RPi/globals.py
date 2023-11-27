@@ -33,13 +33,6 @@ tmp_photo = os.path.join(tmp_dir, "photo.png")
 tmp_crop = os.path.join(tmp_dir, "crop.png")
 tmp_mask = os.path.join(tmp_dir, "mask.png")
 
-CSVDIR = "COLOR_CLASSES"
-HSV_weight = [4, 2, 3]
-csv_files = []
-
-for file in os.listdir(CSVDIR):
-    csv_files.append(os.path.join(CSVDIR, file))
-
 RESISTANCE_COLOR_VALUES = {
     'BLACK':0,
     'BROWN':1,
@@ -57,7 +50,7 @@ RESISTANCE_COLOR_VALUES = {
 
 # -----------------------  GERAL  --------------------------- #
 CAMERA_INDEX = -1
-CAMERA_FOCUS = 300
+CAMERA_FOCUS = 400
 CAMERA_EXPOSURE = 450
 MAX_IPS = 10 # Maximum number of iterations per second
 

@@ -12,7 +12,7 @@ def run_receiver(rec: Receiver):
 
 def main():
     camera = Camera()
-    motor = Motor()
+    motor = Motor(powerSaving=False)
     dispenser = Dispenser()
     plataforma = Plataforma()
 
@@ -26,7 +26,7 @@ def main():
 
     receiver = Receiver(port=PORT, ip=IP, is_running=is_running, array_size=array_size, resistances=resistances, margins=margins)
 
-    if len(sys.argv) == 1 or '--no-server' not in sys.argv:
+    if '--no-server' not in sys.argv:
         receiver_process = Process(target=run_receiver, args=(receiver,))
         receiver_process.start()
     else:
@@ -34,11 +34,11 @@ def main():
     
     # Loads Recognition models
     cropper = YOLO("LATEST/cropper.pt")
-    color_bands = YOLO("LATEST/color_band_segment_grayscale.pt")
+    color_bands = YOLO("LATEST/color_band_segment_grayscale_v13.pt")
 
     motor.home()
     camera.start()
-    if len(sys.argv) == 1 or '--no-renew' not in sys.argv:
+    if '--no-renew' not in sys.argv:
         plataforma.eject()
     
     
@@ -46,12 +46,13 @@ def main():
         sleep(0.1)
 
     for i in range(len(receiver.resistances)):
-        motor.storages[i] = [receiver.resistances[i], receiver.margins[i]]
+        motor.storages[i] = [receiver.resistances[i], receiver.margins[i], motor.storages[i][2]]
+    print(f"Motor storages: {motor.storages}")
 
     no_resistor_accum = 0
     while receiver.is_running.value and no_resistor_accum < 3: # type: ignore
-        resistor_exists = True       
-        if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
+        resistor_exists = True
+        if '--no-renew' not in sys.argv:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 func1 = executor.submit(dispenser.drop) # Drops ONE resistor onto the platform
                 func2 = executor.submit(motor.shake)  # Shakes the motor while dropping the resistor
@@ -75,22 +76,15 @@ def main():
         Image.fromarray(cv.cvtColor(frame, cv.COLOR_BGR2RGB)).save(tmp_photo)
 
         # Runs crop detection model on file
-        cropped_infr = cropper(tmp_photo, conf=0.6) 
+        cropped_infr = cropper(tmp_photo, conf=0.6)
         # Crops and saves original file to a temporary location
         if len(cropped_infr[0].boxes.data):
             cropped = cropImage(cv.imread(tmp_photo), cropped_infr[0].boxes.cpu().data[0])
-        else:
-            cropped = cv.imread(tmp_photo)
-            resistor_exists = False
-        Image.fromarray(cv.cvtColor(cropped, cv.COLOR_BGR2RGB)).save(tmp_crop)
-
-
-        # Runs color bands segmentation model on cropped inference
-        if len(cropped_infr[0].boxes.data):
+            # Performs white-balancing on image
+            balanced = white_balance(cropped)
+            Image.fromarray(cv.cvtColor(balanced, cv.COLOR_BGR2RGB)).save(tmp_crop)
+            # Runs color bands segmentation model on cropped inference
             colorbands_infr = color_bands(tmp_crop, conf=0.6, iou=0.3)
-        else:
-            colorbands_infr = color_bands(tmp_photo, conf=0.6, iou=0.3)
-
 
         resistor = dict()
 
@@ -104,13 +98,16 @@ def main():
             if len(ordered) == 0:
                 resistor_exists = False
             for i in range(len(ordered)):
-                color, _ = timer(retrieve_color(cvtBGR2HSV(ordered[i].avgColor)), printout=True)
+                color = retrieve_color(cvtBGR2HSV(ordered[i].avgColor))
                 resistor[i] = color
+                print(f"Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)} \t Predicted: {color}")
+            input()
         except Exception as e:
             print(e)
 
         # Retrieves the resistance value and moves motor accordingly
         ret, resistance = get_resistance(resistor)
+        print(f"Detected resistance: {resistance}")
         found_slot = motor.find_slot(resistance)
         if not found_slot:
             print(f"Couldn't find a suitable slot for the resistor...")
@@ -122,7 +119,7 @@ def main():
         else:
             no_resistor_accum = 0
 
-        if len(sys.argv) == 1 or sys.argv[1] != '--no-renew':
+        if '--no-renew' not in sys.argv:
             plataforma.eject()
 
 
@@ -130,7 +127,7 @@ def main():
     camera.__del__()
     dispenser.__del__()
     GPIO.cleanup()
-    if len(sys.argv) == 1 or '--no-server' not in sys.argv:
+    if '--no-server' not in sys.argv:
         receiver_process.terminate()
 
 

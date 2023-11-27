@@ -7,30 +7,7 @@ from globals import *
 from utils import *
 from PIL import ImageDraw
 
-TMPCSV = "tmp.csv"
-open(TMPCSV, 'w').close()
 # ----------------------------------------------------------- #
-def update_csv(filename: str, HSV, dir: str=CSVDIR):
-    file = os.path.join(dir, filename)
-    with open(file) as f_in, open(TMPCSV, 'w') as f_out:
-        for line in f_in:
-            f_out.write(line)
-
-    with open(TMPCSV) as f_in, open(file, 'w') as f_out:
-        try:
-            minHSV = [int(i) for i in f_in.readline().split(',')]
-            maxHSV = [int(i) for i in f_in.readline().split(',')]
-            for i in range(3):
-                if HSV[i] < minHSV[i]:
-                    minHSV[i] = HSV[i]
-                elif HSV[i] > maxHSV[i]:
-                    maxHSV[i] = HSV[i]
-        except ValueError:  # If file is empty, sets HSV as standard for min & max
-            minHSV = HSV
-            maxHSV = HSV
-        #
-        f_out.write(",".join([str(i) for i in minHSV])+"\n")
-        f_out.write(",".join([str(i) for i in maxHSV]))
 
 
 def main():
@@ -41,7 +18,7 @@ def main():
 
     # Loads Recognition models
     cropper = YOLO("LATEST/cropper.pt")
-    color_bands = YOLO("LATEST/color_band_segment_grayscale.pt")
+    color_bands = YOLO("LATEST/color_band_segment_grayscale_v13.pt")
 
     motor.home()
     camera.start()
@@ -73,10 +50,11 @@ def main():
         # Crops and saves original file to a temporary location
         if len(cropped_infr[0].boxes.data):
             cropped = cropImage(cv.imread(tmp_photo), cropped_infr[0].boxes.cpu().data[0])
-            Image.fromarray(cv.cvtColor(cropped, cv.COLOR_BGR2RGB)).save(tmp_crop)
+            balanced = white_balance(cropped)
+            Image.fromarray(cv.cvtColor(cropped, cv.COLOR_BGR2RGB)).save("tmp/unbalanced.png")
+            Image.fromarray(cv.cvtColor(balanced, cv.COLOR_BGR2RGB)).save(tmp_crop)
             # Runs color bands segmentation model on cropped inference
             colorbands_infr = color_bands(tmp_crop, conf=0.6, iou=0.3)
-
             try:
                 # Gets masks objects from the inference
                 masks, _ = timer(get_segmentation_masks, tmp_crop, colorbands_infr, printout=True)
@@ -89,21 +67,18 @@ def main():
                 for i in range(len(ordered)):
                     ImageDraw.Draw(labeled).text((ordered[i].bbox[0], ordered[i].bbox[1]), str(i), fill=(255,0,0))
                 labeled.save(os.path.join(tmp_dir, "labeled.png"))
-                print(f"\n\nLABELED SAVED, PLEASE run 'SCP' FROM \n\tHOST MACHINE TO GET THE UPDATED \n\tIMAGE.\n\n")
+                print(f"\n\n\tLABELS SAVED, PLEASE run 'SCP' FROM \n\tHOST MACHINE TO GET THE UPDATED \n\tIMAGE.\n\n")
 
                 for i in range(len(ordered)):
-                    print(f"Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)},  {cvtBGR2HSV(ordered[i].avgColor)} \t Predicted: {retrieve_color(cvtBGR2HSV(ordered[i].avgColor)).upper()}")
-                    # which_csv = input("Which COLOR class does this color band belong to? ").upper() + ".csv"
-                    # while not os.path.isfile(os.path.join(CSVDIR, which_csv)):
-                    #     print("Invalid path of file...")
-                    #     which_csv = input("Which COLOR class does this color band belong to? ").upper() + ".csv"
-
-                    # update_csv(which_csv, cvtBGR2HSV(ordered[i].avgColor))
+                    print(f"Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)}, {cvtBGR2HSV(ordered[i].avgColor)} \t Predicted: {retrieve_color(cvtBGR2HSV(ordered[i].avgColor)).upper()}")
                 input()
 
-            except AttributeError:
-                resistor_exists = False
-                print("Couldn't detect color bands...")
+            except Exception as e:
+                if e == AttributeError:
+                    print(e)
+                    resistor_exists = False
+                    print("Couldn't detect color bands...")
+                
 
         # Handles stopping condition when no resistors are seen based on image recognition
         if resistor_exists:
