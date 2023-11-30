@@ -207,6 +207,31 @@ def timer(func, *args, printout: bool=False):
     return res, dt
 
 
+# Animates text for exiting the program
+def animate_exit(text: str, separator: str="\n"):
+    print(text, end=separator)
+    for _ in range(3):
+        for i in range(1, 4):
+            print("Exiting"+i*'.', end="\r")
+            sleep(0.5)
+            print(" "*len(text), end="")
+
+
+# Handles user input from terminal call
+def handle_input(searchTerm: str, expectedType: type, defaultReturn, fail_msg: str = "Something went wrong when converting types.", exitOnFail: bool = True):
+    if searchTerm in sys.argv:     
+        try:
+            return expectedType(sys.argv[sys.argv.index(searchTerm)+1])
+        except:
+            if exitOnFail:
+                animate_exit()
+                exit()
+            else:
+                print(fail_msg)
+    else:
+        return defaultReturn
+
+
 # Compares an HSV value to those stored in a CSV file (min, max per line structure)
 def in_range(HSV, file: str):
     score = 0
