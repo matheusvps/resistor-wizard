@@ -29,18 +29,6 @@ def white_balance(image):
     return balanced_image
 
 
-# Scales all values in an image
-def scale_colors(image, scale):
-    scale_b, scale_g, scale_r = scale
-    # Apply the correction factors to each channel
-    scaled_image = image.copy()
-    scaled_image[:, :, 0] = np.clip(image[:, :, 0] * scale_b, 0, 255).astype(np.uint8)
-    scaled_image[:, :, 1] = np.clip(image[:, :, 1] * scale_g, 0, 255).astype(np.uint8)
-    scaled_image[:, :, 2] = np.clip(image[:, :, 2] * scale_r, 0, 255).astype(np.uint8)
-
-    return scaled_image
-
-
 # Calculates the centroid of a rectangle
 def get_centroid(rect):
     cX = (rect[2] + rect[0])/2
@@ -230,23 +218,6 @@ def handle_input(searchTerm: str, expectedType: type, defaultReturn, fail_msg: s
                 print(fail_msg)
     else:
         return defaultReturn
-
-
-# Compares an HSV value to those stored in a CSV file (min, max per line structure)
-def in_range(HSV, file: str):
-    score = 0
-    minHSV = []
-    maxHSV = []
-    try:
-        with open(file) as f:
-            minHSV = [int(i) for i in f.readline().split(',')]
-            maxHSV = [int(i) for i in f.readline().split(',')]
-        for i in range(3):
-            if minHSV[i] <= HSV[i] <= maxHSV[i]:
-                score += HSV_weight[i]
-    except ValueError:
-        score = 0
-    return score
 
 
 # Attempts to find which class an HSV color belongs to
