@@ -210,6 +210,38 @@ function ResistanceForm() {
     }
   };
 
+  const handleContinueButtonClick = async () => {
+    try {
+      const response = await fetch(`http://resistorwizard.local:5000/api/continue`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        toast.success('Processo continuado com sucesso', {
+          position: toast.POSITION.TOP_CENTER,
+          autoClose: 3000,
+        });
+        setIsRunning(true);
+        setIsPaused(false);
+      } else {
+        toast.error('Erro ao continuar o processo', {
+          position: toast.POSITION.TOP_CENTER,
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Ocorreu um erro ao continuar o processo', {
+        position: toast.POSITION.TOP_CENTER,
+        autoClose: 3000,
+      });
+    }
+  };
+
   return (
     <div>
       {isRunning ? (
@@ -228,12 +260,12 @@ function ResistanceForm() {
         </div>
       ) : (
         <div>
-          <div
-            className='option-container'
+
+          <label 
+            htmlFor={`resistance${currentIndex}`}
           >
-            Saída: compartimento {currentIndex + 1}
-          </div>
-          <label htmlFor={`resistance${currentIndex}`}>Resistência {currentIndex + 1}</label>
+            Resistência {currentIndex + 1}
+          </label>
           <input
             type="number"
             step="any"
@@ -242,7 +274,9 @@ function ResistanceForm() {
             onChange={e => handleInputChange(currentIndex, e.target.value, 'resistance')}
           />
   
-          <label htmlFor={`margin${currentIndex}`}>Margem {currentIndex + 1}</label>
+          <label 
+            htmlFor={`margin${currentIndex}`}
+          >Margem {currentIndex + 1}</label>
           <input
             type="number"
             step="any"
@@ -255,19 +289,40 @@ function ResistanceForm() {
             {currentIndex > 0 && (
               <button onClick={handlePreviousInput} className="button">Anterior</button>
             )}
-            <button onClick={handleNextInput} className="button">Próximo</button>
-            <button onClick={handleFormSubmission}>Submit</button>
+            <button 
+              onClick={handleNextInput} 
+              className="button"
+            >
+              Próximo
+            </button>
+            <button 
+              onClick={handleFormSubmission}
+            >
+              Submit
+            </button>
           </div>
         </div>
       )}
       <ResistorComponent resistance={parseFloat(resistances[currentIndex])} />
+      <div
+            className='option-container'
+          >
+            Saída: compartimento {currentIndex + 1}
+          </div>
       <div>
         {isRunning && (
           <div>
-            <button onClick={handleStopButtonClick} className="stop-button">Parar</button>
-            <button onClick={handlePauseButtonClick} 
-                  className="stop-button">
-                  {isPaused ? "Continuar" : "Pausar"}
+            <button 
+              onClick={handleStopButtonClick} 
+              className="stop-button"
+            >
+              Parar
+            </button>
+            <button 
+              onClick={isPaused ? handleContinueButtonClick : handlePauseButtonClick} 
+              className={`${isPaused ? 'continue-button' : 'pause-button'}`}
+            >
+              {isPaused ? "Continuar" : "Pausar"}
             </button>          
           </div>
         )}
