@@ -51,6 +51,15 @@
   text-shadow: 1px 0px 9px rgba(0,54,255,.66);
 }
 
+.option-container{
+  display: flex;
+  z-index: 1;
+  flex-direction: column;
+  align-items: center;
+  max-width: 300px;
+  margin: 0 auto; 
+  color: white;
+}
 .loading-container {
   display: flex;
   z-index: 1;

@@ -8,6 +8,8 @@ function ResistanceForm() {
   const [margins, setMargins] = useState(Array(5).fill(''));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false); // Novo estado para controlar se está pausado
+
 
   const findNearestResistance = (inputValue) => {
     const inputValueString = inputValue.toString().split('.')[0];
@@ -75,9 +77,8 @@ function ResistanceForm() {
 
   const handleFormSubmission = async () => {
     setIsRunning(true);
-
-    if (resistances.every(resistance => resistance === '') || margins.every(margin => margin === '')) {
-      toast.error('Por favor, insira pelo menos uma resistência e uma margem antes de enviar os dados.', {
+    const hasNonEmptyResistance = resistances.some(resistance => resistance !== '');
+    if (!hasNonEmptyResistance) {      toast.error('Por favor, insira pelo menos uma resistência e uma margem antes de enviar os dados.', {
         position: toast.POSITION.TOP_CENTER,
         autoClose: 5000,
       });
@@ -153,6 +154,62 @@ function ResistanceForm() {
     }
   };
 
+  const handlePauseButtonClick = async () => {
+    try {
+      if (isPaused) {
+        const response = await fetch(`http://resistorwizard.local:5000/api/continue`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          toast.success('Processo continuado com sucesso', {
+            position: toast.POSITION.TOP_CENTER,
+            autoClose: 3000,
+          });
+          setIsRunning(true);
+          setIsPaused(false);
+        } else {
+          toast.error('Erro ao continuar o processo', {
+            position: toast.POSITION.TOP_CENTER,
+            autoClose: 3000,
+          });
+        }
+      } else {
+        const response = await fetch(`http://resistorwizard.local:5000/api/pause`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          toast.success('Processo pausado com sucesso', {
+            position: toast.POSITION.TOP_CENTER,
+            autoClose: 3000,
+          });
+          setIsRunning(false);
+          setIsPaused(true);
+        } else {
+          toast.error('Erro ao pausar o processo', {
+            position: toast.POSITION.TOP_CENTER,
+            autoClose: 3000,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Ocorreu um erro ao pausar ou continuar o processo', {
+        position: toast.POSITION.TOP_CENTER,
+        autoClose: 3000,
+      });
+    }
+  };
+
   return (
     <div>
       {isRunning ? (
@@ -171,7 +228,12 @@ function ResistanceForm() {
         </div>
       ) : (
         <div>
-          <label htmlFor={`resistance${currentIndex}`}>Resistance {currentIndex + 1}</label>
+          <div
+            className='option-container'
+          >
+            Saída: compartimento {currentIndex + 1}
+          </div>
+          <label htmlFor={`resistance${currentIndex}`}>Resistência {currentIndex + 1}</label>
           <input
             type="number"
             step="any"
@@ -180,7 +242,7 @@ function ResistanceForm() {
             onChange={e => handleInputChange(currentIndex, e.target.value, 'resistance')}
           />
   
-          <label htmlFor={`margin${currentIndex}`}>Margin {currentIndex + 1}</label>
+          <label htmlFor={`margin${currentIndex}`}>Margem {currentIndex + 1}</label>
           <input
             type="number"
             step="any"
@@ -191,9 +253,9 @@ function ResistanceForm() {
   
           <div className="buttons">
             {currentIndex > 0 && (
-              <button onClick={handlePreviousInput} className="button">Previous</button>
+              <button onClick={handlePreviousInput} className="button">Anterior</button>
             )}
-            <button onClick={handleNextInput} className="button">Next</button>
+            <button onClick={handleNextInput} className="button">Próximo</button>
             <button onClick={handleFormSubmission}>Submit</button>
           </div>
         </div>
@@ -201,7 +263,13 @@ function ResistanceForm() {
       <ResistorComponent resistance={parseFloat(resistances[currentIndex])} />
       <div>
         {isRunning && (
-          <button onClick={handleStopButtonClick} className="stop-button">Parar</button>
+          <div>
+            <button onClick={handleStopButtonClick} className="stop-button">Parar</button>
+            <button onClick={handlePauseButtonClick} 
+                  className="stop-button">
+                  {isPaused ? "Continuar" : "Pausar"}
+            </button>          
+          </div>
         )}
       </div>
     </div>
