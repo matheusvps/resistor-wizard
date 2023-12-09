@@ -154,6 +154,26 @@ function ResistanceForm() {
     }
   };
 
+  const handleShutdown = async () => {
+    try {
+      const response = await fetch(`http://resistorwizard.local:5000/api/shutdown`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        setIsRunning(false);
+        console.log('Shutdown successful');
+      } else {
+        console.error('Error shutting down');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
   const handlePauseButtonClick = async () => {
     try {
       if (isPaused) {
@@ -192,7 +212,7 @@ function ResistanceForm() {
             position: toast.POSITION.TOP_CENTER,
             autoClose: 3000,
           });
-          setIsRunning(false);
+          setIsRunning(true);
           setIsPaused(true);
         } else {
           toast.error('Erro ao pausar o processo', {
@@ -244,6 +264,9 @@ function ResistanceForm() {
 
   return (
     <div>
+      <div className="shutdown-button" onClick={handleShutdown}>
+        <img src="/turnoff.png" alt="Shutdown" className='shutdown-icon' style={{ maxWidth: '50px', maxHeight: '50px' }}/>
+      </div>
       {isRunning ? (
         <div
           className="loading-container"
@@ -301,14 +324,14 @@ function ResistanceForm() {
               Submit
             </button>
           </div>
+          <div
+            className='option-container'
+          >
+            Saída: Compartimento {currentIndex + 1}
+          z</div>
         </div>
       )}
       <ResistorComponent resistance={parseFloat(resistances[currentIndex])} />
-      <div
-            className='option-container'
-          >
-            Saída: compartimento {currentIndex + 1}
-          </div>
       <div>
         {isRunning && (
           <div>

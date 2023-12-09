@@ -58,6 +58,8 @@
   align-items: center;
   max-width: 300px;
   margin: 0 auto; 
+  font-size: larger;
+  font-weight: 600;
   color: white;
 }
 .loading-container {
