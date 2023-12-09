@@ -166,12 +166,23 @@ def order_masks(masks, inference):
         c2 = np.array(centroids[i+1])
         distances[i] = np.linalg.norm(c2-c1)
     print(distances)
-    if distances.index(max(distances)) == 0:
+    maxDist = distances.index(max(distances))
+    avg = sum(distances)/len(distances)
+    if maxDist == 0 and (distances[maxDist] - avg) > avg*0.05:
         ordered.reverse()
 
     for m in ordered:
         m.index = ordered.index(m)
     return ordered
+
+
+#
+def reverse_dict_values(mDict: dict):
+    values = list(mDict.values())
+    values.reverse()
+    keys = list(mDict.keys())
+    for i in range(len(keys)):
+        mDict[keys[i]] = values[i]
 
 
 # Runs and records the execution time of a function
@@ -195,14 +206,16 @@ def timer(func, *args, printout: bool=False):
     return res, dt
 
 
-# Animates text for exiting the program
-def animate_exit(text: str, separator: str="\n"):
-    print(text, end=separator)
-    for _ in range(3):
-        for i in range(1, 4):
-            print("Exiting"+i*'.', end="\r")
-            sleep(0.5)
-            print(" "*len(text), end="")
+# Animates text with trailing dots
+def animate_dots(text: str, separator: str="", duration: float=1.0, delay: float=0.3, erase: bool=False):
+    start = time()
+    while time() - start < duration:
+        for i in range(0, 4):
+            print(text+separator+i*'.', end="\r")
+            sleep(delay)
+            print(" "*(i+len(text+separator)), end="\r")
+    if not erase:
+        print(text+separator+3*'.')
 
 
 # Handles user input from terminal call
@@ -212,7 +225,7 @@ def handle_input(searchTerm: str, expectedType: type, defaultReturn, fail_msg: s
             return expectedType(sys.argv[sys.argv.index(searchTerm)+1])
         except:
             if exitOnFail:
-                animate_exit()
+                animate_dots("Error handling input, exiting")
                 exit()
             else:
                 print(fail_msg)
@@ -225,39 +238,47 @@ def retrieve_color(hsv):
     H,S,V = hsv
     S /= 2.55
     V /= 2.55  # Converts to Paints' standard to facilitate comparisons
-    if (V <= 20 and S <= 50) or (V <= 10) or (180 < H <= 250 and V <= 40):
+    if (V <= 20 and S <= 50) or (V < 15) or (180 < H <= 250 and V <= 40):
         return "BLACK"
-    if (50 < H <= 250 and 20 < V <= 67 and S <= 25) or (150 < H <= 240 and 20 < V <= 35 and S <= 35):
+    if (0 < H <= 300 and 20 < V <= 85 and S <= 35) or (150 < H <= 240 and 20 < V <= 35 and S <= 35):
         return "GREY"
-    if (67 < V <= 80 and S <= 20) or (80 < V and S <= 15):
+    if (85 < V and S <= 15):
         return "WHITE"
-    if (H <= 15 or H >= 310) and S > 60 and V > 30:
+    if (H <= 8 or H >= 310) and S > 50 and V > 35:
         return "RED"
-    if (15 < H <= 40 and S > 30 and V > 50) or (15 < H <= 40 and S > 80 and V > 35) or (H < 15 and S < 50 and V > 50):
+    if (8 < H <= 40 and S > 30 and V > 50) or (15 < H <= 40 and S > 80 and V > 35) or (H < 15 and S < 50 and V > 50):
         return "ORANGE"
     if (40 < H <= 85) and ((H >= 65 and S > 50 and V > 40) or (H < 65 and S > 65 and V > 40)):
         return "YELLOW"
-    if (85 < H <= 165 and S > 50 and V > 25):
+    if (85 < H <= 180 and S > 30 and V > 18):
         return "GREEN"
-    if (165 < H <= 245 and S > 50 and V > 20):
+    if (165 < H <= 245 and S > 75 and V > 20):
         return "BLUE"
-    if (245 < H <= 310 and S > 20 and V > 30) or (220 < H <= 245 and 20 < S <= 50 and V > 25):
+    if (225 < H <= 310 and S > 20 and V > 30) or (225 < H <= 245 and 20 < S <= 75 and V > 25):
         return "VIOLET"
     return "BROWN"
 
 
 # Gets resistance value of resistor from resistance-color table
 def get_resistance(resistor: dict):
-    if len(resistor) in [3,4]:
+    if len(resistor) == 3:
+        if resistor[0] == 'GREY' or resistor[2] == 'GREY':
+            return False, -1
+        return True, (RESISTANCE_COLOR_VALUES[resistor[0]]*10 + RESISTANCE_COLOR_VALUES[resistor[1]])*(10**RESISTANCE_COLOR_VALUES[resistor[2]])
+    elif len(resistor) == 4:
+        if resistor[0] == 'GREY':
+            reverse_dict_values(resistor)
         return True, (RESISTANCE_COLOR_VALUES[resistor[0]]*10 + RESISTANCE_COLOR_VALUES[resistor[1]])*(10**RESISTANCE_COLOR_VALUES[resistor[2]])
     elif len(resistor) == 5:
+        if resistor[0] == 'GREY':
+            reverse_dict_values(resistor)
         return True, (RESISTANCE_COLOR_VALUES[resistor[0]]*100 + RESISTANCE_COLOR_VALUES[resistor[1]]*10 + RESISTANCE_COLOR_VALUES[resistor[2]])*(10**RESISTANCE_COLOR_VALUES[resistor[3]])
     else:
         return False, -1
 
 
 class Motor:
-    def __init__(self, stepPin: int=Passo_SM, dirPin: int=Direcao_SM, sleepPin: int=Sleep_SM, stepsPerRev: int=stepsPerRevolution, minDt: float=minDeltaT, hallFXPIN: int=Hall_effect, powerSaving: bool=True, logging: bool=False):
+    def __init__(self, stepPin: int=Passo_SM, dirPin: int=Direcao_SM, sleepPin: int=Sleep_SM, stepsPerRev: int=stepsPerRevolution, minDt: float=minDeltaT, hallFXPIN: int=Hall_effect, powerSaving: bool=True, shake_flag: bool=False, logging: bool=False):
         self.stepPin = stepPin
         self.dirPin = dirPin
         self.sleepPin = sleepPin
@@ -275,6 +296,7 @@ class Motor:
         self.accel_steps = int((self.max_speed-self.min_speed)/self.accel)
         self.logger = logging
         self.power_save = powerSaving
+        self.shake_flag = shake_flag
         self.storages = {  # index: [resistance, margin, position]
             0:[-1,-1,0], 
             1:[-1,-1,33], 
@@ -300,8 +322,9 @@ class Motor:
         while GPIO.input(self.hall_pin) == GPIO.HIGH:  # While Hall doesn't detect magnet, step motor
             self.step()
             sleep(0.01)
-        self.invertDirection()
-        self.step()
+        # sleep(0.5)
+        # self.invertDirection()
+        # self.step()
         sleep(1)
         self.position = 100  # Default home positon (arbitrary)
         self.Sleep(True)
@@ -359,6 +382,8 @@ class Motor:
         self.Sleep(True)
     # "Shakes" the motor as to decrease odds of dispenser failing
     def shake(self):
+        if not self.shake_flag:
+            return
         self.Sleep(False)
         numSteps = 12 # 21,6deg (change according to need)
         freq = 200 # Hz
@@ -384,6 +409,9 @@ class Motor:
                 return True
         self.move(167)
         return False
+    #
+    def __del__(self):
+        pass
 
 
 class Dispenser:
@@ -402,7 +430,7 @@ class Dispenser:
             self.power_state = state
             GPIO.output(self.power_pin, (lambda x: GPIO.LOW if x == False else GPIO.HIGH)(state))
     # Function that vibrates the servos so as to makes the resistors fall
-    def vibrate(self, duration=1): # Duration in seconds
+    def vibrate(self, duration=0.5): # Duration in seconds
         startState = self.power_state
         self.Power()
         sleep(0.1)
@@ -486,8 +514,8 @@ class Camera:
         self.Flash()
         sleep(0.1)
         img = self.dev.read()
-        sleep(0.1)
-        self.Flash(False)
+        # sleep(0.1)
+        # self.Flash(False)
         return img
     # Class destroyer
     def __del__(self):
@@ -522,6 +550,9 @@ class Plataforma:
             self.control.ChangeDutyCycle(dc)
             sleep(delay)
         self.Power(False)
+    #
+    def __del__(self):
+        pass
 
 
 class Receiver:
@@ -543,7 +574,7 @@ class Receiver:
         @self.app.route('/api/send_resistances', methods=['OPTIONS', 'POST'])
         @cross_origin(supports_credentials=True)
         def receive_resistances():
-            self.is_running.value = True # type: ignore
+            self.is_running.value = 1 # type: ignore
             resistances = request.json
             self.update_array(self.resistances, [res["resistance"] for res in resistances])
             self.update_array(self.margins, [res["margin"] for res in resistances])
@@ -553,7 +584,25 @@ class Receiver:
         @self.app.route("/api/stop", methods=['OPTIONS', 'POST'])
         @cross_origin(supports_credentials=True)    
         def stop():
-            self.is_running.value = False # type: ignore
+            self.is_running.value = 0 # type: ignore
+            return 'OK'
+        
+        @self.app.route("/api/pause", methods=['OPTIONS', 'POST'])
+        @cross_origin(supports_credentials=True)    
+        def pause():
+            self.is_running.value = 2 # type: ignore
+            return 'OK'
+        
+        @self.app.route("/api/continue", methods=['OPTIONS', 'POST'])
+        @cross_origin(supports_credentials=True)    
+        def skibididop():
+            self.is_running.value = 1 # type: ignore
+            return 'OK'
+        
+        @self.app.route("/api/shutdown", methods=['OPTIONS', 'POST'])
+        @cross_origin(supports_credentials=True)    
+        def shutdown():
+            self.is_running.value = 3 # type: ignore
             return 'OK'
 
     def update_array(self, target, values):
@@ -566,6 +615,31 @@ class Receiver:
     def start(self):
         self.app.run(host=self.ip, port=self.port)
     
+    def __del__(self):
+        pass
+
+
+class Killer:
+    def __init__(self, is_running):
+        signal.signal(signal.SIGINT, self.killAll)
+        self.is_running = is_running
+        self.objects = []  # List of objects to call __del__ on
+        self.processes = []
+    # Appends an element to be 'killed' on killAll
+    def appendObj(self, elem):
+        self.objects.append(elem)
+    # Appends an element to be 'killed' on killAll
+    def appendProc(self, elem):
+        self.processes.append(elem)
+    #
+    def killAll(self, *args):
+        for elem in self.objects:
+            elem.__del__()
+        for proc in self.processes:
+            proc.terminate()
+        self.is_running.value = 3
+
+
 
 
 

@@ -178,5 +178,5 @@ Backend/RPi/tst.py
 Backend/RPi/photo.png
 .vscode/settings.json
 tmp*
-
+NOCROP/
 *vid_original.mp4

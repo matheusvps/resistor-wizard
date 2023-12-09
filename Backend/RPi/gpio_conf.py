@@ -41,6 +41,14 @@ if platform.system() != 'Windows':
             if not self.enabled:
                 return
             return g.PWM(pin, freq)
+        #
+        def setwarnings(self, state: bool):
+            if not self.enabled:
+                return
+            g.setwarnings(False)
+        #
+        def __del__(self):
+            g.cleanup()
 else:
     class handler:
         def __init__(self):
@@ -94,4 +102,16 @@ else:
         def PWM(self, pin: int, freq: int):
             print("You're running this program in a Windows system, which doesn't have GPIO support...")
             return handler()
-                
+        #
+        def setwarnings(self, state: bool):
+            if not self.enabled:
+                return
+            else:
+                print("You're running this program in a Windows system, which doesn't have GPIO support...")
+        #
+        def __del__(self):
+            if not self.enabled:
+                return
+            else:
+                print("You're running this program in a Windows system, which doesn't have GPIO support...")
+ 

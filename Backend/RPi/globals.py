@@ -1,5 +1,5 @@
 # ----------------------  IMPORTS  -------------------------- #
-from ultralytics import YOLO
+
 from PIL import Image
 import numpy as np
 import cv2 as cv
@@ -13,13 +13,19 @@ from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS, cross_origin
 from multiprocessing.sharedctypes import SynchronizedBase
 from typing import Any
+import signal
 from gpio_conf import *
+
+# Disables YOLO prediction output
+os.environ["YOLO_VERBOSE"] = "False"
+from ultralytics import YOLO
+
 GPIO = gpio()
 
 SYSTEM = platform.system()
 if SYSTEM != 'Windows':
     GPIO.enabled = True
-    
+
 
 # ----------------------------------------------------------- #
 
@@ -80,6 +86,7 @@ Pinos = [
         ]
 
 # ------------------ SETUP RASPBERRY PI --------------------- #
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 for pino in Pinos:
     GPIO.setup(pino, GPIO.OUT)
