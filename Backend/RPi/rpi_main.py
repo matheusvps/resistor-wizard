@@ -50,6 +50,7 @@ def main():
     motor.home()
     camera.start()
     if '--no-renew' not in sys.argv:
+        motor.move(100)  # Moves the motor to the position where the screw can be accessed for removal
         plataforma.eject()
     
     started = False

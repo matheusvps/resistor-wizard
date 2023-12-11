@@ -156,6 +156,7 @@ function ResistanceForm() {
 
   const handleShutdown = async () => {
     try {
+      setIsRunning(false);
       const response = await fetch(`http://resistorwizard.local:5000/api/shutdown`, {
         method: 'POST',
         credentials: 'include',
@@ -165,7 +166,6 @@ function ResistanceForm() {
       });
 
       if (response.ok) {
-        setIsRunning(false);
         console.log('Shutdown successful');
       } else {
         console.error('Error shutting down');
@@ -321,7 +321,7 @@ function ResistanceForm() {
             <button 
               onClick={handleFormSubmission}
             >
-              Submit
+              Enviar
             </button>
           </div>
           <div
@@ -335,12 +335,6 @@ function ResistanceForm() {
       <div>
         {isRunning && (
           <div>
-            <button 
-              onClick={handleStopButtonClick} 
-              className="stop-button"
-            >
-              Parar
-            </button>
             <button 
               onClick={isPaused ? handleContinueButtonClick : handlePauseButtonClick} 
               className={`${isPaused ? 'continue-button' : 'pause-button'}`}
