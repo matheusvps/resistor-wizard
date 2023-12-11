@@ -176,6 +176,16 @@ def order_masks(masks, inference):
     return ordered
 
 
+# Rotates the image if it's too vertically oriented
+def check_orientation(frame):
+    h = frame.shape[0]
+    w = frame.shape[1]
+    ratio = w/h
+    if ratio < 1.2:
+        return cv.rotate(frame, cv.ROTATE_90_CLOCKWISE)
+    return frame
+
+
 #
 def reverse_dict_values(mDict: dict):
     values = list(mDict.values())
@@ -213,7 +223,7 @@ def animate_dots(text: str, separator: str="", duration: float=1.0, delay: float
         for i in range(0, 4):
             print(text+separator+i*'.', end="\r")
             sleep(delay)
-            print(" "*(i+len(text+separator)), end="\r")
+            print(" "*(i+len(text+separator)+1), end="\r")
     if not erase:
         print(text+separator+3*'.')
 
@@ -298,11 +308,11 @@ class Motor:
         self.power_save = powerSaving
         self.shake_flag = shake_flag
         self.storages = {  # index: [resistance, margin, position]
-            0:[-1,-1,0], 
-            1:[-1,-1,33], 
-            2:[-1,-1,67], 
-            3:[-1,-1,100], 
-            4:[-1,-1,133], 
+            0:[-1,-1,0],    # 1
+            1:[-1,-1,33],   # 2 
+            2:[-1,-1,67],   # 3 
+            3:[-1,-1,100],  # 4 
+            4:[-1,-1,133],  # 5
         }
         #
         self.Sleep()
@@ -322,11 +332,8 @@ class Motor:
         while GPIO.input(self.hall_pin) == GPIO.HIGH:  # While Hall doesn't detect magnet, step motor
             self.step()
             sleep(0.01)
-        # sleep(0.5)
-        # self.invertDirection()
-        # self.step()
         sleep(1)
-        self.position = 100  # Default home positon (arbitrary)
+        self.position = 0  # Default home positon (arbitrary)
         self.Sleep(True)
     # Updates Motors stats
     def update(self, safe_mode: bool=True):
@@ -633,6 +640,8 @@ class Killer:
         self.processes.append(elem)
     #
     def killAll(self, *args):
+        print()
+        animate_dots("Terminating all processes")
         for elem in self.objects:
             elem.__del__()
         for proc in self.processes:

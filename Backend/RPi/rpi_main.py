@@ -44,17 +44,22 @@ def main():
         receiver.is_running.value = 1 # type: ignore
     
     # Loads Recognition models
-    cropper = YOLO("LATEST/cropper_retrained.pt")
-    color_bands = YOLO("LATEST/color_band_segment_grayscale_v13.pt")
+    cropper = YOLO(yolo_cropper)
+    color_bands = YOLO(yolo_segment)
 
     motor.home()
     camera.start()
     if '--no-renew' not in sys.argv:
         plataforma.eject()
     
+    started = False
     while receiver.is_running.value != 3: # type: ignore
-        while receiver.is_running.value != 1: # type: ignore
+        while receiver.is_running.value != 1 and receiver.is_running.value != 3: # type: ignore
             sleep(0.1)
+        
+        if not started:  # Clears terminal window to facilitate reading
+            os.system("clear")
+            started = True
 
         for i in range(len(receiver.resistances)):
             motor.storages[i] = [receiver.resistances[i], receiver.margins[i], motor.storages[i][2]]
@@ -62,7 +67,6 @@ def main():
 
         no_resistor_accum = 0
         while receiver.is_running.value == 1 and no_resistor_accum < 3: # type: ignore
-            resistor_exists = True
             if '--no-renew' not in sys.argv:
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     func1 = executor.submit(dispenser.drop) # Drops ONE resistor onto the platform
@@ -82,9 +86,10 @@ def main():
                 if not ret:
                     animate_dots("Couldn't retrieve frame from stream", duration=3)
                     raise Exception("Camera Failure.")
-
             
-            Image.fromarray(cv.cvtColor(frame, cv.COLOR_BGR2RGB)).save(tmp_photo)
+            oriented = check_orientation(frame)
+
+            Image.fromarray(cv.cvtColor(oriented, cv.COLOR_BGR2RGB)).save(tmp_photo)
 
             resistor = dict()
 
@@ -92,6 +97,7 @@ def main():
             cropped_infr = cropper(tmp_photo, conf=0.6)
             # Crops and saves original file to a temporary location
             if len(cropped_infr[0].boxes.data):
+                print("\033[92m \n\tDetected a resistor\033[0m")
                 cropped = cropImage(cv.imread(tmp_photo), cropped_infr[0].boxes.cpu().data[0])
                 # Performs white-balancing on image
                 balanced = white_balance(cropped)
@@ -106,37 +112,31 @@ def main():
                     #    know in which direction to start, so by default it 
                     #    uses the leftmost (0,0) point as a beginning.
                     ordered = order_masks(masks, colorbands_infr)
-                    if len(ordered) == 0:
-                        resistor_exists = False
+
                     for i in range(len(ordered)):
                         color = retrieve_color(cvtBGR2HSV(ordered[i].avgColor))
                         resistor[i] = color
                         print(f"Index: {ordered[i].index} \t HSV: {cvtBGR2HSV(ordered[i].avgColor, paint=True)} \t Predicted: {color}")
-                    input()
                 except Exception as e:
                     print(e)
-            else:
-                resistor_exists = False
 
-            # Retrieves the resistance value and moves motor accordingly
-            ret, resistance = get_resistance(resistor)
-            print(f"\033[91m \n\tDetected Resistance: {resistance}\033[0m")
-            found_slot = motor.find_slot(resistance)
-            if not found_slot:
-                print(f"Couldn't find a suitable slot for the resistor...")
-
-            # Handles stopping condition when no resistors are left based on image recognition
-            if not resistor_exists:
-                no_resistor_accum += 1
-                print(f"\n\tCouldn't find a resistor in the image, at a total of {no_resistor_accum} empty images\n")
-            else:
+                # Retrieves the resistance value and moves motor accordingly
+                ret, resistance = get_resistance(resistor)
+                print(f"\033[91m \n\tDetected Resistance: {resistance}\n\033[0m")
+                found_slot = motor.find_slot(resistance)
+                if not found_slot:
+                    print(f"No suitable destination for the resistor...")
                 no_resistor_accum = 0
+            else:
+                # Handles stopping condition when no resistors are 'seen' on image recognition
+                no_resistor_accum += 1
+                print(f"\033[91m\n\tCouldn't find a resistor, totalling {no_resistor_accum} empty images\n\033[0m")
 
             if '--no-renew' not in sys.argv:
                 plataforma.eject()
 
-
     # CLOSING
+    motor.move(100)  # Moves the motor to the position where the screw can be accessed for removal
     camera.__del__()
     dispenser.__del__()
     GPIO.__del__()

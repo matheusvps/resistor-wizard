@@ -32,12 +32,16 @@ if SYSTEM != 'Windows':
 CROP_AMOUNT = 0
 CENTER_BOX = 1/2
 
-tmp_dir = os.path.join(os.getcwd(),"tmp")
+WORKINGDIR = os.path.dirname( os.path.abspath( __file__ ) )
+tmp_dir = os.path.join(WORKINGDIR,"tmp")
 if not os.path.isdir(tmp_dir):
     os.mkdir(tmp_dir)
 tmp_photo = os.path.join(tmp_dir, "photo.png")
 tmp_crop = os.path.join(tmp_dir, "crop.png")
 tmp_mask = os.path.join(tmp_dir, "mask.png")
+
+yolo_cropper = os.path.join(WORKINGDIR, "LATEST/cropper_retrained.pt")
+yolo_segment = os.path.join(WORKINGDIR, "LATEST/color_band_segment_grayscale_v13.pt")
 
 RESISTANCE_COLOR_VALUES = {
     'BLACK':0,

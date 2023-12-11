@@ -328,7 +328,7 @@ function ResistanceForm() {
             className='option-container'
           >
             Saída: Compartimento {currentIndex + 1}
-          z</div>
+          </div>
         </div>
       )}
       <ResistorComponent resistance={parseFloat(resistances[currentIndex])} />

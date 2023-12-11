@@ -137,6 +137,7 @@ def main():
 
 
     # CLOSING
+    motor.move(0)
     camera.__del__()
     dispenser.__del__()
     GPIO.__del__()
