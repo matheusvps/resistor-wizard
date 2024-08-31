@@ -2,7 +2,7 @@
 
 ## Overview
 
-This GitHub repository hosts the code for the Resistor Sorter project, developed as part of the Integration Workshops 1 course. The system consists of a resistor sorting system that allows users to insert indivual resistors into a small slit and select up to six resistance values to sort them into. The system is implemented as a web application, with its frontend built using CSS, HTML, JavaScript, and React. Both the server and subsequent backend processes are handled by a Raspberry Pi 3B running Flask. Using computer vision techniques, it photographs the resistor's position and extracts color information about the resistor to determine its resistance. Machine Learning (ML) techniques were used to assist in this process.
+This GitHub repository hosts the code for the Resistor Sorter project, developed as part of the Integration Workshops 1 subject. The system consists of a resistor sorting mechanism that allows users to insert indivual resistors into a small slit and select up to six resistance values to sort them into. It's implemented as a web application, with its frontend built using CSS, HTML, Javascript, and React framework. Both the server and subsequent backend processes are handled by a Raspberry Pi 3B running Flask in Python. The Pi photographs the resistors through a USB camera and extracts color and position data using Computer Vision (CV) to determine its resistance. To optimise the process of locating and classifying hue values under different lighting conditions, Machine Learning (ML) techniques were used.
 
 ## Team Members
 
@@ -14,7 +14,7 @@ This GitHub repository hosts the code for the Resistor Sorter project, developed
 
 ### Frontend
 
-The frontend of the Resistor Sorter project is responsible for creating the user interface where resistors can be input, and resistance values can be selected. The user interacts with the system through this web-based interface.
+The frontend of the Resistor Wizard is composed of the web app user interface where resistance values can be selected and the hardware abd mechanical system controlled. The user interacts with the system primarily through this web interface.
 
 ### Backend
 
@@ -24,7 +24,7 @@ The backend of the project runs on a Raspberry Pi 3B server and is implemented i
 - Color recognition using OpenCV
 - Communication with the frontend
 
-### Machine-Learning Model
+### Machine-Learning Models
 
 The ML models are a crucial component of this project. They have been trained by our dedicated team to recognize resistors and resistor color bands accurately. The data used to train the models themselves is majoritarily self-provided (meaning we created and labelled the data ourselves). The complete datasets can be visited at <a href="https://universe.roboflow.com/uni-vug0c/metal-film-leaded-resistors-dataset">resistor dataset</a> and <a href="https://universe.roboflow.com/jhony-minetto-arajo/metal-film-leaded-resistor-color-bands">resistor color bands dataset</a>.
 
